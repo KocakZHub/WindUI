@@ -5,7 +5,11 @@
 ]]
 
 local KocakZ = {}
-local HttpService = game:GetService("HttpService")
+local cloneref = (cloneref or clonereference or function(instance)
+	return instance
+end)
+
+local HttpService = cloneref(game:GetService("HttpService"))
 
 function KocakZ.New(backendURL)
 	assert(type(backendURL) == "string" and backendURL:match("^https://"), "Set the KocakZ HTTPS website URL")
