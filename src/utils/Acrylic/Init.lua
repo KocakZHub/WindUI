@@ -1,7 +1,8 @@
 -- Credits: Fluent - Dawid
 
-local cloneref = (cloneref or clonereference or function(instance) return instance end)
-
+local cloneref = (cloneref or clonereference or function(instance)
+	return instance
+end)
 
 local Acrylic = {
 	AcrylicBlur = require("./Blur"),

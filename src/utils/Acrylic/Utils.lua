@@ -1,8 +1,8 @@
 -- Credits: Fluent - Dawid
 
-
-local cloneref = (cloneref or clonereference or function(instance) return instance end)
-
+local cloneref = (cloneref or clonereference or function(instance)
+	return instance
+end)
 
 local function map(value, inMin, inMax, outMin, outMax)
 	return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin

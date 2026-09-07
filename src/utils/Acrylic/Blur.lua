@@ -1,15 +1,14 @@
 -- Credits: Fluent - Dawid
 
-local cloneref = (cloneref or clonereference or function(instance) return instance end)
-
+local cloneref = (cloneref or clonereference or function(instance)
+	return instance
+end)
 
 local Creator = require("../../modules/Creator")
 local New = Creator.New
 
-
 local viewportPointToWorld, getOffset = unpack(require("./Utils"))
 local BlurFolder = Instance.new("Folder", cloneref(game:GetService("Workspace")).CurrentCamera)
-
 
 local function createAcrylic()
 	local Part = New("Part", {
@@ -31,7 +30,6 @@ local function createAcrylic()
 
 	return Part
 end
-
 
 local function createAcrylicBlur(distance)
 	local cleanups = {}

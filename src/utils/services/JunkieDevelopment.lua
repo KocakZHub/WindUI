@@ -1,63 +1,70 @@
-
-
 --[[
 
-    Junkie Development API   |   
+	Junkie Development SDK   |   https://docs.jnkie.com/roblox-sdk/inline-ui
 
 ]]
 
 local JunkieDevelopment = {}
 
-function JunkieDevelopment.New(ServiceId, ApiKey, Provider)
-    JunkieProtected.API_KEY = ApiKey
-    JunkieProtected.PROVIDER = Provider
-    JunkieProtected.SERVICE_ID = ServiceId
+local SDK_URL = "https://jnkie.com/sdk/library.lua"
 
-    local function ValidateKey(key)
-        if not key or key == "" then
-            print("No key provided!")
-            --game.Players.LocalPlayer:Kick("No key provided. Please get a key.")
-            return false, "No key provided. Please get a key."
-        end
+local function loadSDK()
+	assert(type(loadstring) == "function", "Your executor does not provide loadstring")
 
-        local keylessCheck = JunkieProtected.IsKeylessMode()
-        if keylessCheck and keylessCheck.keyless_mode then
-            print("Keyless mode enabled. Starting script...")
-            return true, "Keyless mode enabled. Starting script..."
-        end
+	local source = game:HttpGet(SDK_URL)
+	local chunk, compileError = loadstring(source)
+	assert(chunk, "Failed to compile the Junkie SDK: " .. tostring(compileError))
 
-        local result = JunkieProtected.ValidateKey({ Key = key })
-        if result == "valid" then
-            print("Key is valid! Starting script...")
-            load()                                                                                                               
-            if _G.JD_IsPremium then                       
-                print("Premium user detected!")
-            else
-                print("Standard user")
-            end
+	local Junkie = chunk()
+	assert(type(Junkie) == "table", "Junkie SDK returned an invalid library")
+	assert(type(Junkie.check_key) == "function", "Junkie SDK does not provide check_key")
+	assert(type(Junkie.get_key_link) == "function", "Junkie SDK does not provide get_key_link")
+	return Junkie
+end
 
-            return true, "Key is valid!"
-        else
-            local keyLink = JunkieProtected.GetKeyLink()
-            print("Invalid key!")
-            --game.Players.LocalPlayer:Kick("Invalid key. Get one from: " .. keyLink)
-            return false, "Invalid key. Get one from:" .. keyLink
-        end                                                                                                            
-    end
+function JunkieDevelopment.New(Service, Identifier, Provider)
+	local Junkie = loadSDK()
+	Junkie.service = Service
+	Junkie.identifier = tostring(Identifier)
+	Junkie.provider = Provider
 
-    local function copyLink()
-        local link = JunkieProtected.GetKeyLink()                                                                                        
-        --print("Get your key: " .. link)                                                                                                
-        if setclipboard then
-            setclipboard(link)
-        end
-    end                                                                                                                                                                                                                                                                       
-    return {
-        Verify = ValidateKey,
-        Copy = copyLink
-    }
+	local function validateKey(key)
+		if type(key) ~= "string" or key == "" then
+			return false, "KEY_INVALID"
+		end
+
+		local callOk, result = pcall(Junkie.check_key, key)
+		if not callOk then
+			return false, "Junkie SDK request failed: " .. tostring(result)
+		end
+		if type(result) ~= "table" then
+			return false, "Junkie SDK returned an invalid response"
+		end
+
+		if result.valid == true or result.success == true then
+			local env = (getgenv and getgenv()) or _G
+			env.SCRIPT_KEY = key
+			return true, tostring(result.message or "KEY_VALID")
+		end
+
+		return false, tostring(result.error or result.message or "KEY_INVALID")
+	end
+
+	local function getKeyLink()
+		local callOk, link, err = pcall(Junkie.get_key_link)
+		if not callOk then
+			error("Junkie SDK request failed: " .. tostring(link))
+		end
+		if type(link) ~= "string" or link == "" then
+			error(tostring(err or "Junkie SDK did not return a key link"))
+		end
+		return link
+	end
+
+	return {
+		Verify = validateKey,
+		Copy = getKeyLink,
+	}
 end
 
 return JunkieDevelopment
-
-
