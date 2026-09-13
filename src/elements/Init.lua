@@ -1,3 +1,5 @@
+local Creator = require("../modules/Creator")
+
 return {
 	Elements = {
 		Paragraph = require("./Paragraph"),
@@ -23,6 +25,8 @@ return {
 	Load = function(tbl, Container, Elements, Window, WindUI, OnElementCreateFunction, ElementsModule, UIScale, Tab)
 		for name, module in next, Elements do
 			tbl[name] = function(self, config)
+				local profileStartedAt = os.clock()
+				local instancesBefore = Creator.CreatedCount
 				config = config or {}
 				config.Tab = Tab or tbl
 				config.ParentType = tbl.__type
@@ -36,6 +40,7 @@ return {
 				config.ElementsModule = ElementsModule
 
 				local _elementInstance, content = module:New(config)
+				Creator.RecordComponent(name, profileStartedAt, instancesBefore)
 
 				if config.Flag and typeof(config.Flag) == "string" then
 					if Window.CurrentConfig then

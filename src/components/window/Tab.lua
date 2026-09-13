@@ -385,7 +385,7 @@ function TabModule.New(Config, UIScale)
 					end
 
 					updatePosition()
-					MouseConn = Mouse.Move:Connect(updatePosition)
+					MouseConn = Creator.AddSignal(Mouse.Move, updatePosition)
 					ToolTip:Open()
 				end
 			end)
@@ -408,7 +408,7 @@ function TabModule.New(Config, UIScale)
 				hoverTimer = nil
 			end
 			if MouseConn then
-				MouseConn:Disconnect()
+				Creator.DisconnectSignal(MouseConn)
 				MouseConn = nil
 			end
 			if ToolTip then

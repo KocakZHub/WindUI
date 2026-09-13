@@ -4,7 +4,6 @@ local cloneref = (cloneref or clonereference or function(instance)
 	return instance
 end)
 
-local UserInputService = cloneref(game:GetService("UserInputService"))
 local Mouse = cloneref(game:GetService("Players")).LocalPlayer:GetMouse()
 local Camera = cloneref(game:GetService("Workspace")).CurrentCamera
 
@@ -20,6 +19,8 @@ local TabBackgroundTransparency = 0.67
 
 function DropdownMenu.New(Config, Dropdown, Element, Type)
 	local DropdownModule = {}
+	local ItemsBuilt = false
+	local LazyItemThreshold = 25
 
 	if not Dropdown.Callback then
 		Type = "Menu"
@@ -255,10 +256,18 @@ function DropdownMenu.New(Config, Dropdown, Element, Type)
 		end
 	end
 
-	function DropdownModule:Refresh(Values)
+	function DropdownModule:Refresh(Values, forceBuild, suppressCallback)
 		if Config.Window.Destroyed then
 			return
 		end
+
+		Dropdown.Values = Values
+		if Type == "Dropdown" and not ItemsBuilt and not forceBuild and #Values >= LazyItemThreshold then
+			DropdownModule:Display()
+			Callback()
+			return
+		end
+		ItemsBuilt = true
 
 		for _, Elementt in next, Dropdown.UIElements.Menu.Frame.ScrollingFrame:GetChildren() do
 			if not Elementt:IsA("UIListLayout") then
@@ -289,6 +298,8 @@ function DropdownMenu.New(Config, Dropdown, Element, Type)
 
 		for Index, Tab in next, Values do
 			if Tab.Type ~= "Divider" then
+				local itemStartedAt = os.clock()
+				local instancesBefore = Creator.CreatedCount
 				local TabMain = {
 					Name = typeof(Tab) == "table" and Tab.Title or Tab,
 					Desc = typeof(Tab) == "table" and Tab.Desc or nil,
@@ -546,6 +557,7 @@ function DropdownMenu.New(Config, Dropdown, Element, Type)
 
 				RecalculateCanvasSize()
 				RecalculateListSize()
+				Creator.RecordComponent("DropdownItem", itemStartedAt, instancesBefore)
 			else
 				require("../../elements/Divider"):New({ Parent = Dropdown.UIElements.Menu.Frame.ScrollingFrame })
 			end
@@ -566,9 +578,10 @@ function DropdownMenu.New(Config, Dropdown, Element, Type)
 			Dropdown.UIElements.MenuCanvas.Size.Y.Scale,
 			Dropdown.UIElements.MenuCanvas.Size.Y.Offset
 		)
-		Callback()
+		if not suppressCallback then
+			Callback()
+		end
 
-		Dropdown.Values = Values
 	end
 
 	DropdownModule:Refresh(Dropdown.Values)
@@ -591,6 +604,9 @@ function DropdownMenu.New(Config, Dropdown, Element, Type)
 
 	function DropdownModule:Open()
 		if not Dropdown.Locked then
+			if not ItemsBuilt then
+				DropdownModule:Refresh(Dropdown.Values, true, true)
+			end
 			Dropdown.UIElements.Menu.Visible = true
 			Dropdown.UIElements.MenuCanvas.Visible = true
 			Dropdown.UIElements.MenuCanvas.Active = true
@@ -642,7 +658,7 @@ function DropdownMenu.New(Config, Dropdown, Element, Type)
 		end
 	)
 
-	Creator.AddSignal(UserInputService.InputBegan, function(Input)
+	Creator.AddInputSignal("InputBegan", function(Input)
 		if
 			Input.UserInputType == Enum.UserInputType.MouseButton1
 			or Input.UserInputType == Enum.UserInputType.Touch

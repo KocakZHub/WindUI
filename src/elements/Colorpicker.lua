@@ -413,7 +413,7 @@ function Element:Colorpicker(Config, Window, WindUI, OnApply)
 			Callback = function()
 				Config.IsShowed = false
 				for _, Conn in next, Connections do
-					Conn:Disconnect()
+					Creator.DisconnectSignal(Conn)
 				end
 				Connections = {}
 			end,
@@ -425,7 +425,7 @@ function Element:Colorpicker(Config, Window, WindUI, OnApply)
 			Callback = function()
 				Config.IsShowed = false
 				for _, Conn in next, Connections do
-					Conn:Disconnect()
+					Creator.DisconnectSignal(Conn)
 				end
 				Connections = {}
 
@@ -662,7 +662,7 @@ function Element:Colorpicker(Config, Window, WindUI, OnApply)
 
 	table.insert(
 		Connections,
-		UserInputService.InputChanged:Connect(function(input)
+		Creator.AddSignal(UserInputService.InputChanged, function(input)
 			if
 				input.UserInputType ~= Enum.UserInputType.MouseMovement
 				and input.UserInputType ~= Enum.UserInputType.Touch
@@ -682,7 +682,7 @@ function Element:Colorpicker(Config, Window, WindUI, OnApply)
 
 	table.insert(
 		Connections,
-		Colorpicker.UIElements.SatVibMap.InputBegan:Connect(function(input)
+		Creator.AddSignal(Colorpicker.UIElements.SatVibMap.InputBegan, function(input)
 			if
 				input.UserInputType ~= Enum.UserInputType.MouseButton1
 				and input.UserInputType ~= Enum.UserInputType.Touch
@@ -707,7 +707,7 @@ function Element:Colorpicker(Config, Window, WindUI, OnApply)
 
 	table.insert(
 		Connections,
-		HueSlider.InputBegan:Connect(function(input)
+		Creator.AddSignal(HueSlider.InputBegan, function(input)
 			if
 				input.UserInputType ~= Enum.UserInputType.MouseButton1
 				and input.UserInputType ~= Enum.UserInputType.Touch
@@ -733,7 +733,7 @@ function Element:Colorpicker(Config, Window, WindUI, OnApply)
 	if TransparencySlider then
 		table.insert(
 			Connections,
-			TransparencySlider.InputBegan:Connect(function(input)
+			Creator.AddSignal(TransparencySlider.InputBegan, function(input)
 				if
 					input.UserInputType ~= Enum.UserInputType.MouseButton1
 					and input.UserInputType ~= Enum.UserInputType.Touch
@@ -759,7 +759,7 @@ function Element:Colorpicker(Config, Window, WindUI, OnApply)
 
 	table.insert(
 		Connections,
-		UserInputService.InputEnded:Connect(function(input)
+		Creator.AddSignal(UserInputService.InputEnded, function(input)
 			ActiveSlider = nil
 
 			if WindUI.CurrentInput and WindUI.CurrentInput ~= CurInput then

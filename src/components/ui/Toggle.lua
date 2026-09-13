@@ -303,10 +303,10 @@ function Toggle.New(Value, Icon, IconSize, Parent, Callback, NewElement, Config)
             ):Play()
 
             if dragConnection then
-                dragConnection:Disconnect()
+                Creator.DisconnectSignal(dragConnection)
             end
 
-            dragConnection = UserInputService.InputChanged:Connect(function(inputChanged)
+            dragConnection = Creator.AddSignal(UserInputService.InputChanged, function(inputChanged)
                 if not Config.Window.IsToggleDragging then
                     return
                 end
@@ -343,10 +343,10 @@ function Toggle.New(Value, Icon, IconSize, Parent, Callback, NewElement, Config)
             end)
 
             if endConnection then
-                endConnection:Disconnect()
+                Creator.DisconnectSignal(endConnection)
             end
 
-            endConnection = UserInputService.InputEnded:Connect(function(inputEnded)
+            endConnection = Creator.AddSignal(UserInputService.InputEnded, function(inputEnded)
                 if not Config.Window.IsToggleDragging then
                     return
                 end
@@ -360,11 +360,11 @@ function Toggle.New(Value, Icon, IconSize, Parent, Callback, NewElement, Config)
                 Config.Window.IsToggleDragging = false
 
                 if dragConnection then
-                    dragConnection:Disconnect()
+                    Creator.DisconnectSignal(dragConnection)
                     dragConnection = nil
                 end
                 if endConnection then
-                    endConnection:Disconnect()
+                    Creator.DisconnectSignal(endConnection)
                     endConnection = nil
                 end
 

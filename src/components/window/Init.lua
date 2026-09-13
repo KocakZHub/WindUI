@@ -1666,7 +1666,7 @@ return function(Config)
 		end)
 	end
 
-	Creator.AddSignal(UserInputService.InputBegan, function(input, isProcessed)
+	Creator.AddInputSignal("InputBegan", function(input, isProcessed)
 		if isProcessed then
 			return
 		end
@@ -1702,7 +1702,16 @@ return function(Config)
 
 	function Window:Tab(TabConfig)
 		TabConfig.Parent = Window.UIElements.SideBar.Frame
-		return TabModule.New(TabConfig, Config.WindUI.UIScale)
+		local startedAt = os.clock()
+		local instancesBefore = Creator.CreatedCount
+		local tab = TabModule.New(TabConfig, Config.WindUI.UIScale)
+		Creator.RecordComponent("Tab", startedAt, instancesBefore)
+		if Config.WindUI.PerformanceEnabled then
+			Config.WindUI.Performance.TabCount = Config.WindUI.Performance.TabCount + 1
+			Config.WindUI.Performance.TabCreateDuration = Config.WindUI.Performance.TabCreateDuration
+				+ (os.clock() - startedAt)
+		end
+		return tab
 	end
 
 	function Window:SelectTab(Tab)
@@ -2061,7 +2070,7 @@ return function(Config)
 		end
 	end)
 
-	Creator.AddSignal(UserInputService.InputChanged, function(input)
+	Creator.AddInputSignal("InputChanged", function(input)
 		if
 			input.UserInputType == Enum.UserInputType.MouseMovement
 			or input.UserInputType == Enum.UserInputType.Touch

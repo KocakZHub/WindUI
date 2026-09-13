@@ -108,7 +108,7 @@ function Element:New(Config: ConfigType)
         end
     end)
 
-    Creator.AddSignal(UserInputService.InputEnded, function(Input)
+    Creator.AddInputSignal("InputEnded", function(Input)
         if Viewport.Interactive then
             if
                 Input.UserInputType == Enum.UserInputType.MouseButton1
@@ -125,7 +125,7 @@ function Element:New(Config: ConfigType)
         end
     end)
 
-    Creator.AddSignal(UserInputService.InputChanged, function(Input)
+    Creator.AddInputSignal("InputChanged", function(Input)
         if Viewport.Interactive and Dragging and not Pinching then
             if
                 Input.UserInputType == Enum.UserInputType.MouseMovement

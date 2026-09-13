@@ -1,3 +1,13 @@
+local ModuleStartedAt = os.clock()
+local Environment = type(getgenv) == "function" and getgenv() or _G
+local function memoryKb()
+	local value
+	pcall(function()
+		value = gcinfo()
+	end)
+	return value
+end
+
 local WindUI = {
 	Window = nil,
 	Theme = nil,
@@ -24,6 +34,22 @@ local WindUI = {
 	CreateWindow = nil,
 
 	CurrentInput = nil,
+	PerformanceEnabled = Environment.WindUIDebugProfile == true,
+	Performance = {
+		ModuleStartedAt = ModuleStartedAt,
+		InitializedAt = 0,
+		WindowCreatedAt = 0,
+		WindowCreateDuration = 0,
+		TabCount = 0,
+		TabCreateDuration = 0,
+		MemoryAtStartKb = memoryKb(),
+		MemoryAfterInitializationKb = nil,
+		MemoryAfterWindowKb = nil,
+		InstancesAfterInitialization = 0,
+		InstancesAfterWindow = 0,
+		ConnectionsAfterInitialization = 0,
+		ConnectionsAfterWindow = 0,
+	},
 }
 
 local cloneref = (cloneref or clonereference or function(instance)
@@ -36,7 +62,6 @@ local HttpService = cloneref(game:GetService("HttpService"))
 local Players = cloneref(game:GetService("Players"))
 local CoreGui = cloneref(game:GetService("CoreGui"))
 local RunService = cloneref(game:GetService("RunService"))
-local UserInputService = cloneref(game:GetService("UserInputService"))
 
 function WindUI.GenerateGUID()
 	return HttpService:GenerateGUID(false)
@@ -44,7 +69,7 @@ end
 
 local CurInput = WindUI.GenerateGUID()
 
-UserInputService.InputBegan:Connect(function(Input, GameProcessed)
+WindUI.Creator.AddInputSignal("InputBegan", function(Input, GameProcessed)
 	--[[if GameProcessed then
 		return
 	end]]
@@ -64,7 +89,7 @@ UserInputService.InputBegan:Connect(function(Input, GameProcessed)
 		end
 	end)
 end)
-UserInputService.InputEnded:Connect(function(Input, GameProcessed)
+WindUI.Creator.AddInputSignal("InputEnded", function(Input, GameProcessed)
 	if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 		if WindUI.CurrentInput and WindUI.CurrentInput ~= CurInput then
 			return
@@ -151,6 +176,45 @@ ProtectGui(WindUI.DropdownGui)
 ProtectGui(WindUI.TooltipGui)
 
 Creator.Init(WindUI)
+WindUI.Performance.InitializedAt = os.clock()
+WindUI.Performance.MemoryAfterInitializationKb = memoryKb()
+WindUI.Performance.InstancesAfterInitialization = Creator.CreatedCount
+WindUI.Performance.ConnectionsAfterInitialization = #Creator.Signals
+
+function WindUI:GetPerformanceSnapshot()
+	local guiInstances = 0
+	local guiRoots = {}
+	for _, gui in ipairs({ WindUI.ScreenGui, WindUI.NotificationGui, WindUI.DropdownGui, WindUI.TooltipGui }) do
+		if gui and gui.Parent then
+			local descendants = #gui:GetDescendants()
+			guiInstances = guiInstances + 1 + descendants
+			guiRoots[gui.Name] = descendants
+		end
+	end
+
+	return {
+		Enabled = WindUI.PerformanceEnabled,
+		InitializationDuration = WindUI.Performance.InitializedAt - WindUI.Performance.ModuleStartedAt,
+		WindowCreateDuration = WindUI.Performance.WindowCreateDuration,
+		TabCount = WindUI.Performance.TabCount,
+		TabCreateDuration = WindUI.Performance.TabCreateDuration,
+		MemoryKb = memoryKb(),
+		MemoryAtStartKb = WindUI.Performance.MemoryAtStartKb,
+		MemoryAfterInitializationKb = WindUI.Performance.MemoryAfterInitializationKb,
+		MemoryAfterWindowKb = WindUI.Performance.MemoryAfterWindowKb,
+		InstancesAfterInitialization = WindUI.Performance.InstancesAfterInitialization,
+		InstancesAfterWindow = WindUI.Performance.InstancesAfterWindow,
+		ConnectionsAfterInitialization = WindUI.Performance.ConnectionsAfterInitialization,
+		ConnectionsAfterWindow = WindUI.Performance.ConnectionsAfterWindow,
+		CreatedInstances = Creator.CreatedCount,
+		ComponentStats = Creator.ComponentStats,
+		LiveGuiInstances = guiInstances,
+		GuiRoots = guiRoots,
+		ManagedConnections = #Creator.Signals,
+		IconPacks = Creator.GetIconLoadStats(),
+		Loader = WindUI.LoaderPerformance,
+	}
+end
 
 function WindUI:SetParent(parent)
 	if WindUI.ScreenGui then
@@ -303,6 +367,7 @@ WindUI:SetTheme("Dark")
 WindUI:SetLanguage(Creator.Language)
 
 function WindUI:CreateWindow(Config)
+	local windowStartedAt = os.clock()
 	local CreateWindow = require("./components/window/Init")
 
 	if not RunService:IsStudio() and writefile then
@@ -460,6 +525,11 @@ function WindUI:CreateWindow(Config)
 	if Config.Acrylic then
 		Acrylic.init()
 	end
+	WindUI.Performance.WindowCreatedAt = os.clock()
+	WindUI.Performance.WindowCreateDuration = WindUI.Performance.WindowCreatedAt - windowStartedAt
+	WindUI.Performance.MemoryAfterWindowKb = memoryKb()
+	WindUI.Performance.InstancesAfterWindow = Creator.CreatedCount
+	WindUI.Performance.ConnectionsAfterWindow = #Creator.Signals
 
 	-- function Window:ToggleTransparency(Value)
 	--     WindUI.Transparent = Value

@@ -7,6 +7,7 @@ local UserInputService = cloneref(game:GetService("UserInputService"))
 local TweenService = cloneref(game:GetService("TweenService"))
 local LocalizationService = cloneref(game:GetService("LocalizationService"))
 local HttpService = cloneref(game:GetService("HttpService"))
+local environment = type(getgenv) == "function" and getgenv() or _G
 
 local DynamicShapeModule = require("./DynamicShape")
 
@@ -14,7 +15,7 @@ local RenderStepped = RunService.Heartbeat
 
 local IconsURL = "https://raw.githubusercontent.com/Footagesus/Icons/main/Main-v2.lua"
 
-local Icons = require("../Icons/Main-v2")
+local Icons = require("./Icons")
 
 Icons.SetIconsType("lucide")
 
@@ -124,7 +125,30 @@ Creator = {
 		["Glass-1.4"] = "rbxassetid://95071123641270",
 	},]]
 	ThemeChangeCallbacks = {},
+	ProfileEnabled = environment.WindUIDebugProfile == true,
+	CreatedCount = 0,
+	ComponentStats = {},
+	InputCallbacks = {
+		InputBegan = {},
+		InputChanged = {},
+		InputEnded = {},
+	},
+	InputDispatchers = {},
 }
+
+function Creator.RecordComponent(name, startedAt, instancesBefore)
+	if not Creator.ProfileEnabled then
+		return
+	end
+	local stats = Creator.ComponentStats[name]
+	if not stats then
+		stats = { Count = 0, Instances = 0, Duration = 0 }
+		Creator.ComponentStats[name] = stats
+	end
+	stats.Count = stats.Count + 1
+	stats.Instances = stats.Instances + (Creator.CreatedCount - instancesBefore)
+	stats.Duration = stats.Duration + (os.clock() - startedAt)
+end
 
 function Creator.Init(WindUITable)
 	WindUI = WindUITable
@@ -142,11 +166,57 @@ function Creator.AddSignal(Signal, Function)
 	return conn
 end
 
-function Creator.DisconnectAll()
-	for idx, signal in next, Creator.Signals do
-		local Connection = table.remove(Creator.Signals, idx)
-		Connection:Disconnect()
+function Creator.AddInputSignal(eventName, callback)
+	local callbacks = Creator.InputCallbacks[eventName]
+	local signal = UserInputService[eventName]
+	if not callbacks or not signal then
+		error("Unsupported input event: " .. tostring(eventName))
 	end
+
+	if not Creator.InputDispatchers[eventName] then
+		Creator.InputDispatchers[eventName] = Creator.AddSignal(signal, function(...)
+			for _, listener in pairs(callbacks) do
+				-- Native RBXScriptSignal connections run independently; preserve that
+				-- behavior so one yielding/erroring control cannot block the others.
+				task.spawn(listener, ...)
+			end
+		end)
+	end
+
+	local id = HttpService:GenerateGUID(false)
+	callbacks[id] = callback
+	local connection = {}
+	function connection:Disconnect()
+		callbacks[id] = nil
+	end
+	return connection
+end
+
+function Creator.DisconnectSignal(connection)
+	if not connection then
+		return
+	end
+	local index = table.find(Creator.Signals, connection)
+	if index then
+		table.remove(Creator.Signals, index)
+	end
+	pcall(function()
+		connection:Disconnect()
+	end)
+end
+
+function Creator.DisconnectAll()
+	for index = #Creator.Signals, 1, -1 do
+		local connection = table.remove(Creator.Signals, index)
+		pcall(function()
+			connection:Disconnect()
+		end)
+	end
+	table.clear(Creator.ThemeChangeCallbacks)
+	for _, callbacks in pairs(Creator.InputCallbacks) do
+		table.clear(callbacks)
+	end
+	table.clear(Creator.InputDispatchers)
 end
 
 function Creator.SafeCallback(Function, ...)
@@ -496,8 +566,15 @@ function Creator.AddIcons(packName, iconsData)
 	return Icons.AddIcons(packName, iconsData)
 end
 
+function Creator.GetIconLoadStats()
+	return Icons.GetLoadStats()
+end
+
 function Creator.New(Name, Properties, Children)
 	local Object = Instance.new(Name)
+	if Creator.ProfileEnabled then
+		Creator.CreatedCount = Creator.CreatedCount + 1
+	end
 
 	for Name, Value in next, Creator.DefaultProperties[Name] or {} do
 		Object[Name] = Value
@@ -650,7 +727,7 @@ function Creator.Drag(mainFrame, dragFrames, ondrag)
 	end
 
 	for _, dragFrame in pairs(dragFrames) do
-		dragFrame.InputBegan:Connect(function(input)
+		Creator.AddSignal(dragFrame.InputBegan, function(input)
 			if not DragModule.CanDraggable or dragging then
 				return
 			end
@@ -678,7 +755,7 @@ function Creator.Drag(mainFrame, dragFrames, ondrag)
 		end)
 	end
 
-	UserInputService.InputChanged:Connect(function(input)
+	Creator.AddInputSignal("InputChanged", function(input)
 		if not dragging then
 			return
 		end
@@ -697,7 +774,7 @@ function Creator.Drag(mainFrame, dragFrames, ondrag)
 		end
 	end)
 
-	UserInputService.InputEnded:Connect(function(input)
+	Creator.AddInputSignal("InputEnded", function(input)
 		if not dragging or WindUI.CurrentInput ~= CurInput then
 			return
 		end

@@ -1,8 +1,67 @@
-local cloneref = (cloneref or clonereference or function(instance)
-	return instance
-end)
+local PackURLs = {
+	lucide = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/lucide/dist/Icons.lua",
+	solar = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/solar/dist/Icons.lua",
+	craft = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/craft/dist/Icons.lua",
+	geist = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/geist/dist/Icons.lua",
+	sfsymbols = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/sfsymbols/dist/Icons.lua",
+	gravity = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/gravity/dist/Icons.lua",
+}
 
-local IconModule = cloneref(game:GetService("ReplicatedStorage"):WaitForChild("GetIcons", 99999):InvokeServer())
+local environment = type(getgenv) == "function" and getgenv() or _G
+environment.__WindUIIconPacks = environment.__WindUIIconPacks or {}
+local SharedIconPacks = environment.__WindUIIconPacks
+local FailedIconPacks = {}
+local LoadStats = {}
+
+local IconModule = {
+	IconsType = "lucide",
+	Icons = SharedIconPacks,
+}
+
+local function loadIconPack(packName)
+	if IconModule.Icons[packName] then
+		return IconModule.Icons[packName]
+	end
+	if FailedIconPacks[packName] or not PackURLs[packName] then
+		return nil
+	end
+
+	local startedAt = os.clock()
+	local downloadedBytes = 0
+	local success, result = pcall(function()
+		if packName == "lucide" then
+			return require("../Icons/lucide/dist/Icons")
+		end
+		assert(type(loadstring) == "function", "loadstring is unavailable")
+		local source = game:HttpGet(PackURLs[packName])
+		downloadedBytes = #source
+		local chunk, compileError = loadstring(source)
+		assert(type(chunk) == "function", compileError or "icon pack did not compile")
+		return chunk()
+	end)
+	if not success or type(result) ~= "table" then
+		FailedIconPacks[packName] = true
+		LoadStats[packName] = {
+			Duration = os.clock() - startedAt,
+			Bytes = downloadedBytes,
+			Success = false,
+		}
+		warn("WindUI failed to load the " .. packName .. " icon pack: " .. tostring(result))
+		return nil
+	end
+
+	IconModule.Icons[packName] = result
+	LoadStats[packName] = {
+		Duration = os.clock() - startedAt,
+		Bytes = downloadedBytes,
+		Success = true,
+	}
+	return result
+end
+
+function IconModule.GetLoadStats()
+	return LoadStats
+end
 
 local function parseIconString(iconString)
 	if type(iconString) == "string" then
@@ -89,7 +148,7 @@ function IconModule.Icon(Icon, Type, DefaultFormat)
 	local targetType = iconType or Type or IconModule.IconsType
 	local targetName = iconName
 
-	local iconSet = IconModule.Icons[targetType]
+	local iconSet = IconModule.Icons[targetType] or loadIconPack(targetType)
 
 	if iconSet and iconSet.Icons and iconSet.Icons[targetName] then
 		return {
