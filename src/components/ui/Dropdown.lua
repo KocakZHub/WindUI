@@ -176,24 +176,23 @@ function DropdownMenu.New(Config, Dropdown, Element, Type)
 
 	local function Callback(customCallback)
 		DropdownModule:Display()
+
 		if Dropdown.Locked then
 			return
 		end
 
 		if Dropdown.Callback then
-			task.spawn(function()
-				if Dropdown.Locked then
-					return
-				end
-				Creator.SafeCallback(Dropdown.Callback, Dropdown.Value)
-			end)
+			if Dropdown.Locked then
+				return
+			end
+
+			Creator.SafeCallback(Dropdown.Callback, Dropdown.Value)
 		else
-			task.spawn(function()
-				if Dropdown.Locked then
-					return
-				end
-				Creator.SafeCallback(customCallback)
-			end)
+			if Dropdown.Locked then
+				return
+			end
+
+			Creator.SafeCallback(customCallback)
 		end
 	end
 
@@ -581,7 +580,6 @@ function DropdownMenu.New(Config, Dropdown, Element, Type)
 		if not suppressCallback then
 			Callback()
 		end
-
 	end
 
 	DropdownModule:Refresh(Dropdown.Values)

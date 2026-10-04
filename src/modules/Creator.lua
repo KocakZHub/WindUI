@@ -169,6 +169,7 @@ end
 function Creator.AddInputSignal(eventName, callback)
 	local callbacks = Creator.InputCallbacks[eventName]
 	local signal = UserInputService[eventName]
+
 	if not callbacks or not signal then
 		error("Unsupported input event: " .. tostring(eventName))
 	end
@@ -176,19 +177,20 @@ function Creator.AddInputSignal(eventName, callback)
 	if not Creator.InputDispatchers[eventName] then
 		Creator.InputDispatchers[eventName] = Creator.AddSignal(signal, function(...)
 			for _, listener in pairs(callbacks) do
-				-- Native RBXScriptSignal connections run independently; preserve that
-				-- behavior so one yielding/erroring control cannot block the others.
-				task.spawn(listener, ...)
+				listener(...)
 			end
 		end)
 	end
 
 	local id = HttpService:GenerateGUID(false)
 	callbacks[id] = callback
+
 	local connection = {}
+
 	function connection:Disconnect()
 		callbacks[id] = nil
 	end
+
 	return connection
 end
 
