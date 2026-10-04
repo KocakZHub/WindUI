@@ -1,5 +1,8 @@
 {
-    "bundle": {
-        "require_mode": "path"
-    }
+	"bundle": {
+		"require_mode": "path"
+	},
+	"generator": {
+		"name": "readable"
+	}
 }
