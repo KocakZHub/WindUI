@@ -301,8 +301,34 @@ end
 
 function Creator.UpdateFont(FontId)
 	Creator.Font = FontId
-	for _, Obj in next, Creator.FontObjects do
-		Obj.FontFace = Font.new(FontId, Obj.FontFace.Weight, Obj.FontFace.Style)
+	local Objects = Creator.FontObjects
+	for Index = #Objects, 1, -1 do
+		local Obj = Objects[Index]
+		local Ok, Err = pcall(function()
+			Obj.FontFace = Font.new(FontId, Obj.FontFace.Weight, Obj.FontFace.Style)
+		end)
+		if not Ok then
+			table.remove(Objects, Index)
+			if not Creator.FontErrorReported then
+				Creator.FontErrorReported = true
+				local _, Class = pcall(function()
+					return Obj.ClassName
+				end)
+				local _, Path = pcall(function()
+					return Obj:GetFullName()
+				end)
+				local _, Text = pcall(function()
+					return Obj.Text
+				end)
+				warn(
+					"[ WindUI ] UpdateFont skipped a font object:",
+					tostring(Class),
+					tostring(Path),
+					"text=" .. tostring(Text),
+					tostring(Err)
+				)
+			end
+		end
 	end
 end
 
