@@ -34,7 +34,6 @@ Creator = {
 	LocalizationObjects = {},
 	UIScale = 1,
 	FontObjects = {},
-	FontObjectInfo = {},
 	Language = string.match(LocalizationService.SystemLocaleId, "^[a-z]+"),
 	Request = http_request or (syn and syn.request) or request,
 	DefaultProperties = {
@@ -297,20 +296,6 @@ end
 
 function Creator.AddFontObject(Object)
 	table.insert(Creator.FontObjects, Object)
-	-- Diagnostics: record the creation context of every font object so a
-	-- later "lacking capability Plugin" failure can be traced back to the
-	-- thread that made it.
-	local okId, threadIdentity = pcall(function()
-		return getthreadidentity and getthreadidentity() or "n/a"
-	end)
-	local okThread, threadRef = pcall(function()
-		return tostring(coroutine.running())
-	end)
-	Creator.FontObjectInfo[#Creator.FontObjects] = {
-		identity = okId and tostring(threadIdentity) or ("idErr:" .. tostring(threadIdentity)),
-		thread = okThread and threadRef or "n/a",
-		at = os.clock(),
-	}
 	Creator.UpdateFont(Creator.Font)
 end
 
@@ -323,21 +308,10 @@ function Creator.UpdateFont(FontId)
 			Obj.FontFace = Font.new(FontId, Obj.FontFace.Weight, Obj.FontFace.Style)
 		end)
 		if not Ok then
-			local Info = Creator.FontObjectInfo[Index]
 			table.remove(Objects, Index)
-			Creator.FontObjectInfo[Index] = nil
 			if not Creator.FontErrorReported then
 				Creator.FontErrorReported = true
-				warn(
-					"[ WindUI ] UpdateFont font object INACCESSIBLE:",
-					"index=" .. Index,
-					"identity-at-creation=" .. (Info and Info.identity or "?"),
-					"thread-at-creation=" .. (Info and Info.thread or "?"),
-					"created-at=" .. (Info and string.format("%.2f", Info.at) or "?"),
-					"now=" .. string.format("%.2f", os.clock()),
-					"current-identity=" .. tostring(getthreadidentity and getthreadidentity() or "?"),
-					"current-thread=" .. tostring(coroutine.running())
-				)
+				warn("[ WindUI ] UpdateFont skipped a font object:", tostring(Err))
 			end
 		end
 	end

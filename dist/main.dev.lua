@@ -2447,7 +2447,6 @@ do
                 LocalizationObjects = {},
                 UIScale = 1,
                 FontObjects = {},
-                FontObjectInfo = {},
                 Language = string.match(g.SystemLocaleId, '^[a-z]+'),
                 Request = http_request or (syn and syn.request) or request,
                 DefaultProperties = {
@@ -2697,20 +2696,6 @@ do
             end
             function r.AddFontObject(u)
                 table.insert(r.FontObjects, u)
-
-                local v, x = pcall(function()
-                    return getthreadidentity and getthreadidentity() or 'n/a'
-                end)
-                local z, A = pcall(function()
-                    return tostring(coroutine.running())
-                end)
-
-                r.FontObjectInfo[#r.FontObjects] = {
-                    identity = v and tostring(x) or ('idErr:' .. tostring(x)),
-                    thread = z and A or 'n/a',
-                    at = os.clock(),
-                }
-
                 r.UpdateFont(r.Font)
             end
             function r.UpdateFont(u)
@@ -2720,21 +2705,17 @@ do
 
                 for x = #v, 1, -1 do
                     local z = v[x]
-                    local A = pcall(function()
+                    local A, B = pcall(function()
                         z.FontFace = Font.new(u, z.FontFace.Weight, z.FontFace.Style)
                     end)
 
                     if not A then
-                        local B = r.FontObjectInfo[x]
-
                         table.remove(v, x)
-
-                        r.FontObjectInfo[x] = nil
 
                         if not r.FontErrorReported then
                             r.FontErrorReported = true
 
-                            warn('[ WindUI ] UpdateFont font object INACCESSIBLE:', 'index=' .. x, 'identity-at-creation=' .. (B and B.identity or '?'), 'thread-at-creation=' .. (B and B.thread or '?'), 'created-at=' .. (B and string.format('%.2f', B.at) or '?'), 'now=' .. string.format('%.2f', os.clock()), 'current-identity=' .. tostring(getthreadidentity and getthreadidentity() or '?'), 'current-thread=' .. tostring(coroutine.running()))
+                            warn('[ WindUI ] UpdateFont skipped a font object:', tostring(B))
                         end
                     end
                 end
