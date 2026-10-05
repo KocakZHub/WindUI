@@ -2447,6 +2447,7 @@ do
                 LocalizationObjects = {},
                 UIScale = 1,
                 FontObjects = {},
+                FontObjectInfo = {},
                 Language = string.match(g.SystemLocaleId, '^[a-z]+'),
                 Request = http_request or (syn and syn.request) or request,
                 DefaultProperties = {
@@ -2696,6 +2697,20 @@ do
             end
             function r.AddFontObject(u)
                 table.insert(r.FontObjects, u)
+
+                local v, x = pcall(function()
+                    return getthreadidentity and getthreadidentity() or 'n/a'
+                end)
+                local z, A = pcall(function()
+                    return tostring(coroutine.running())
+                end)
+
+                r.FontObjectInfo[#r.FontObjects] = {
+                    identity = v and tostring(x) or ('idErr:' .. tostring(x)),
+                    thread = z and A or 'n/a',
+                    at = os.clock(),
+                }
+
                 r.UpdateFont(r.Font)
             end
             function r.UpdateFont(u)
@@ -2705,27 +2720,21 @@ do
 
                 for x = #v, 1, -1 do
                     local z = v[x]
-                    local A, B = pcall(function()
+                    local A = pcall(function()
                         z.FontFace = Font.new(u, z.FontFace.Weight, z.FontFace.Style)
                     end)
 
                     if not A then
+                        local B = r.FontObjectInfo[x]
+
                         table.remove(v, x)
+
+                        r.FontObjectInfo[x] = nil
 
                         if not r.FontErrorReported then
                             r.FontErrorReported = true
 
-                            local C, F = pcall(function()
-                                return z.ClassName
-                            end)
-                            local G, H = pcall(function()
-                                return z:GetFullName()
-                            end)
-                            local J, L = pcall(function()
-                                return z.Text
-                            end)
-
-                            warn('[ WindUI ] UpdateFont skipped a font object:', tostring(F), tostring(H), 'text=' .. tostring(L), tostring(B))
+                            warn('[ WindUI ] UpdateFont font object INACCESSIBLE:', 'index=' .. x, 'identity-at-creation=' .. (B and B.identity or '?'), 'thread-at-creation=' .. (B and B.thread or '?'), 'created-at=' .. (B and string.format('%.2f', B.at) or '?'), 'now=' .. string.format('%.2f', os.clock()), 'current-identity=' .. tostring(getthreadidentity and getthreadidentity() or '?'), 'current-thread=' .. tostring(coroutine.running()))
                         end
                     end
                 end
@@ -2834,71 +2843,71 @@ do
                 return x
             end
             function r.UpdateTheme(u, v, x, z, A, B)
-                local function ApplyTheme(F)
-                    for H, J in pairs(F.Properties or {})do
-                        local L = r.GetThemeProperty(J, r.Theme)
+                local function ApplyTheme(C)
+                    for F, G in pairs(C.Properties or {})do
+                        local H = r.GetThemeProperty(G, r.Theme)
 
-                        if L ~= nil then
-                            if typeof(L) == 'Color3' then
-                                local M = F.Object:FindFirstChild'LibraryGradient'
+                        if H ~= nil then
+                            if typeof(H) == 'Color3' then
+                                local J = C.Object:FindFirstChild'LibraryGradient'
 
-                                if M then
-                                    M:Destroy()
+                                if J then
+                                    J:Destroy()
                                 end
                                 if x then
-                                    r.Tween(F.Object, z or 0.2, {[H] = L}, A or Enum.EasingStyle.Quint, B or Enum.EasingDirection.Out):Play()
+                                    r.Tween(C.Object, z or 0.2, {[F] = H}, A or Enum.EasingStyle.Quint, B or Enum.EasingDirection.Out):Play()
                                 elseif v then
-                                    r.Tween(F.Object, 0.08, {[H] = L}):Play()
+                                    r.Tween(C.Object, 0.08, {[F] = H}):Play()
                                 else
-                                    F.Object[H] = L
+                                    C.Object[F] = H
                                 end
-                            elseif typeof(L) == 'table' and L.Color and L.Transparency then
-                                F.Object[H] = Color3.new(1, 1, 1)
+                            elseif typeof(H) == 'table' and H.Color and H.Transparency then
+                                C.Object[F] = Color3.new(1, 1, 1)
 
-                                local M = F.Object:FindFirstChild'LibraryGradient'
+                                local J = C.Object:FindFirstChild'LibraryGradient'
 
-                                if not M then
-                                    M = Instance.new'UIGradient'
-                                    M.Name = 'LibraryGradient'
-                                    M.Parent = F.Object
+                                if not J then
+                                    J = Instance.new'UIGradient'
+                                    J.Name = 'LibraryGradient'
+                                    J.Parent = C.Object
                                 end
 
-                                M.Color = L.Color
-                                M.Transparency = L.Transparency
+                                J.Color = H.Color
+                                J.Transparency = H.Transparency
 
-                                for N, O in pairs(L)do
-                                    if N ~= 'Color' and N ~= 'Transparency' and M[N] ~= nil then
-                                        M[N] = O
+                                for L, M in pairs(H)do
+                                    if L ~= 'Color' and L ~= 'Transparency' and J[L] ~= nil then
+                                        J[L] = M
                                     end
                                 end
-                            elseif typeof(L) == 'number' then
+                            elseif typeof(H) == 'number' then
                                 if x then
-                                    r.Tween(F.Object, z or 0.2, {[H] = L}, A or Enum.EasingStyle.Quint, B or Enum.EasingDirection.Out):Play()
+                                    r.Tween(C.Object, z or 0.2, {[F] = H}, A or Enum.EasingStyle.Quint, B or Enum.EasingDirection.Out):Play()
                                 elseif v then
-                                    r.Tween(F.Object, 0.08, {[H] = L}):Play()
+                                    r.Tween(C.Object, 0.08, {[F] = H}):Play()
                                 else
-                                    F.Object[H] = L
+                                    C.Object[F] = H
                                 end
                             end
                         else
-                            local M = F.Object:FindFirstChild'LibraryGradient'
+                            local J = C.Object:FindFirstChild'LibraryGradient'
 
-                            if M then
-                                M:Destroy()
+                            if J then
+                                J:Destroy()
                             end
                         end
                     end
                 end
 
                 if u then
-                    local F = r.Objects[u]
+                    local C = r.Objects[u]
 
-                    if F then
-                        ApplyTheme(F)
+                    if C then
+                        ApplyTheme(C)
                     end
                 else
-                    for F, H in pairs(r.Objects)do
-                        ApplyTheme(H)
+                    for C, F in pairs(r.Objects)do
+                        ApplyTheme(F)
                     end
                 end
             end
@@ -2998,17 +3007,17 @@ do
                         z[A] = B
                     end
                     if r.Localization and r.Localization.Enabled and A == 'Text' then
-                        local F = string.match(B, '^' .. r.Localization.Prefix .. '(.+)')
+                        local C = string.match(B, '^' .. r.Localization.Prefix .. '(.+)')
 
-                        if F then
-                            local H = #r.LocalizationObjects + 1
+                        if C then
+                            local F = #r.LocalizationObjects + 1
 
-                            r.LocalizationObjects[H] = {
-                                TranslationId = F,
+                            r.LocalizationObjects[F] = {
+                                TranslationId = C,
                                 Object = z,
                             }
 
-                            r.SetLangForObject(H)
+                            r.SetLangForObject(F)
                         end
                     end
                 end
@@ -3040,78 +3049,78 @@ do
             end
             function r.Drag(x, z, A)
                 local B = p.GenerateGUID()
-                local F
-                local H = false
-                local J, L
-                local M
-                local N = {CanDraggable = true}
+                local C
+                local F = false
+                local G, H
+                local J
+                local L = {CanDraggable = true}
 
                 if not z or typeof(z) ~= 'table' then
                     z = {x}
                 end
 
-                local function update(O)
-                    if not H or not N.CanDraggable then
+                local function update(M)
+                    if not F or not L.CanDraggable then
                         return
                     end
 
-                    local P = O.Position - J
+                    local N = M.Position - G
 
                     r.Tween(x, 0.02, {
-                        Position = UDim2.new(L.X.Scale, L.X.Offset + P.X, L.Y.Scale, L.Y.Offset + P.Y),
+                        Position = UDim2.new(H.X.Scale, H.X.Offset + N.X, H.Y.Scale, H.Y.Offset + N.Y),
                     }):Play()
                 end
 
-                for O, P in pairs(z)do
-                    r.AddSignal(P.InputBegan, function(Q)
-                        if not N.CanDraggable or H then
+                for M, N in pairs(z)do
+                    r.AddSignal(N.InputBegan, function(O)
+                        if not L.CanDraggable or F then
                             return
                         end
-                        if Q.UserInputType == Enum.UserInputType.MouseButton1 or Q.UserInputType == Enum.UserInputType.Touch then
+                        if O.UserInputType == Enum.UserInputType.MouseButton1 or O.UserInputType == Enum.UserInputType.Touch then
                             if p and p.CurrentInput and p.CurrentInput ~= B then
                                 return
                             end
 
                             p.CurrentInput = B
-                            H = true
-                            M = Q
-                            F = P
-                            J = Q.Position
-                            L = x.Position
+                            F = true
+                            J = O
+                            C = N
+                            G = O.Position
+                            H = x.Position
 
                             if A and typeof(A) == 'function' then
-                                A(true, F)
+                                A(true, C)
                             end
                         end
                     end)
                 end
 
-                r.AddInputSignal('InputChanged', function(O)
-                    if not H then
+                r.AddInputSignal('InputChanged', function(M)
+                    if not F then
                         return
                     end
                     if p.CurrentInput and p.CurrentInput ~= B then
                         return
                     end
-                    if M.UserInputType == Enum.UserInputType.MouseButton1 then
-                        if O.UserInputType == Enum.UserInputType.MouseMovement then
-                            update(O)
+                    if J.UserInputType == Enum.UserInputType.MouseButton1 then
+                        if M.UserInputType == Enum.UserInputType.MouseMovement then
+                            update(M)
                         end
-                    elseif M.UserInputType == Enum.UserInputType.Touch then
-                        if O == M then
-                            update(O)
+                    elseif J.UserInputType == Enum.UserInputType.Touch then
+                        if M == J then
+                            update(M)
                         end
                     end
                 end)
-                r.AddInputSignal('InputEnded', function(O)
-                    if not H or p.CurrentInput ~= B then
+                r.AddInputSignal('InputEnded', function(M)
+                    if not F or p.CurrentInput ~= B then
                         return
                     end
-                    if O == M or (M.UserInputType == Enum.UserInputType.MouseButton1 and O.UserInputType == Enum.UserInputType.MouseButton1) then
+                    if M == J or (J.UserInputType == Enum.UserInputType.MouseButton1 and M.UserInputType == Enum.UserInputType.MouseButton1) then
                         p.CurrentInput = nil
-                        H = false
-                        M = nil
-                        F = nil
+                        F = false
+                        J = nil
+                        C = nil
 
                         if A and typeof(A) == 'function' then
                             A(false, nil)
@@ -3119,11 +3128,11 @@ do
                     end
                 end)
 
-                function N.Set(O, P)
-                    N.CanDraggable = P
+                function L.Set(M, N)
+                    L.CanDraggable = N
                 end
 
-                return N
+                return L
             end
 
             m.Init(u, 'Icon')
@@ -3140,11 +3149,11 @@ do
 
                 return z
             end
-            function r.Image(x, z, A, B, F, H, J, L)
+            function r.Image(x, z, A, B, C, F, G, H)
                 B = B or 'Temp'
                 z = r.SanitizeFilename(z)
 
-                local M = u('Frame', {
+                local J = u('Frame', {
                     Size = UDim2.new(0, 0, 0, 0),
                     BackgroundTransparency = 1,
                 }, {
@@ -3152,8 +3161,8 @@ do
                         Size = UDim2.new(1, 0, 1, 0),
                         BackgroundTransparency = 1,
                         ScaleType = 'Crop',
-                        ThemeTag = (r.Icon(x) or J) and {
-                            ImageColor3 = H and (L or 'Icon') or nil,
+                        ThemeTag = (r.Icon(x) or G) and {
+                            ImageColor3 = F and (H or 'Icon') or nil,
                         } or nil,
                     }, {
                         u('UICorner', {
@@ -3163,84 +3172,84 @@ do
                 })
 
                 if r.Icon(x) then
-                    M.ImageLabel:Destroy()
+                    J.ImageLabel:Destroy()
 
-                    local N = m.Image{
+                    local L = m.Image{
                         Icon = x,
                         Size = UDim2.new(1, 0, 1, 0),
                         Colors = {
-                            (H and (L or 'Icon') or false),
+                            (F and (H or 'Icon') or false),
                             'Button',
                         },
                     }.IconFrame
 
-                    N.Parent = M
+                    L.Parent = J
                 elseif string.find(x, 'http') and not string.find(x, 'roblox.com') then
-                    local N = 'WindUI/' .. B .. '/assets/.' .. F .. '-' .. z .. '.png'
-                    local O, P = pcall(function()
+                    local L = 'WindUI/' .. B .. '/assets/.' .. C .. '-' .. z .. '.png'
+                    local M, N = pcall(function()
                         task.spawn(function()
-                            local O = r.Request and r.Request{
+                            local M = r.Request and r.Request{
                                 Url = x,
                                 Method = 'GET',
                             }.Body or {}
 
                             if not d:IsStudio() and writefile then
-                                writefile(N, O)
+                                writefile(L, M)
                             end
 
-                            local P, Q = pcall(getcustomasset, N)
+                            local N, O = pcall(getcustomasset, L)
 
-                            if P then
-                                M.ImageLabel.Image = Q
+                            if N then
+                                J.ImageLabel.Image = O
                             else
-                                warn(string.format("[ WindUI.Creator ] Failed to load custom asset '%s': %s", N, tostring(Q)))
-                                M:Destroy()
+                                warn(string.format("[ WindUI.Creator ] Failed to load custom asset '%s': %s", L, tostring(O)))
+                                J:Destroy()
 
                                 return
                             end
                         end)
                     end)
 
-                    if not O then
-                        warn("[ WindUI.Creator ]  '" .. identifyexecutor() or 'Studio' .. "' doesnt support the URL Images. Error: " .. P)
-                        M:Destroy()
+                    if not M then
+                        warn("[ WindUI.Creator ]  '" .. identifyexecutor() or 'Studio' .. "' doesnt support the URL Images. Error: " .. N)
+                        J:Destroy()
                     end
                 elseif x == '' then
-                    M.Visible = false
+                    J.Visible = false
                 else
-                    M.ImageLabel.Image = x
+                    J.ImageLabel.Image = x
                 end
 
-                return M
+                return J
             end
             function r.Color3ToHSB(x)
                 local z, A, B = x.R, x.G, x.B
-                local F = math.max(z, A, B)
-                local H = math.min(z, A, B)
-                local J = F - H
-                local L = 0
+                local C = math.max(z, A, B)
+                local F = math.min(z, A, B)
+                local G = C - F
+                local H = 0
 
-                if J ~= 0 then
-                    if F == z then
-                        L = (A - B) / J % 6
-                    elseif F == A then
-                        L = (B - z) / J + 2
+                if G ~= 0 then
+                    if C == z then
+                        H = (A - B) / G % 6
+                    elseif C == A then
+                        H = (B - z) / G + 2
                     else
-                        L = (z - A) / J + 4
+                        H = (z - A) / G + 4
                     end
 
-                    L = L * 60
+                    H = H * 60
                 else
-                    L = 0
+                    H = 0
                 end
 
-                local M = (F == 0) and 0 or (J / F)
-                local N = F
+                local J = (C == 0) and 0 or (G / C)
+                local L = C
 
                 return {
-                    h = math.floor(L + 0.5),
-                    s = M,
-                    b = N,
+                    h = math.floor(H + 0.5),
+                    s = J,
+                    b = L,
                 }
             end
             function r.GetPerceivedBrightness(x)
@@ -3252,7 +3261,7 @@ do
             end
             function r.GetTextColorForHSB(x, z)
                 local A = r.Color3ToHSB(x)
-                local B, F, H = A.h, A.s, A.b
+                local B, C, F = A.h, A.s, A.b
 
                 if r.GetPerceivedBrightness(x) > (z or 0.5) then
                     return Color3.fromHSV(B / 360, 0, 0.05)
@@ -3262,17 +3271,17 @@ do
             end
             function r.GetAverageColor(x)
                 local z, A, B = 0, 0, 0
-                local F = x.Color.Keypoints
+                local C = x.Color.Keypoints
 
-                for H, J in ipairs(F)do
-                    z = z + J.Value.R
-                    A = A + J.Value.G
-                    B = B + J.Value.B
+                for F, G in ipairs(C)do
+                    z = z + G.Value.R
+                    A = A + G.Value.G
+                    B = B + G.Value.B
                 end
 
-                local H = #F
+                local F = #C
 
-                return Color3.new(z / H, A / H, B / H)
+                return Color3.new(z / F, A / F, B / F)
             end
             function r.GenerateUniqueID(x)
                 return h:GenerateGUID(false)
@@ -3299,21 +3308,21 @@ do
                     A = Color3.fromHex(A)
                 end
 
-                return function(F)
-                    local H
+                return function(C)
+                    local F
 
                     if typeof(z) == 'string' and string.sub(z, 1, 1) ~= '#' then
-                        H = r.GetThemeProperty(z, F)
+                        F = r.GetThemeProperty(z, C)
                     elseif typeof(z) == 'string' then
-                        H = Color3.fromHex(z)
+                        F = Color3.fromHex(z)
                     else
-                        H = z
+                        F = z
                     end
-                    if not H or typeof(H) ~= 'Color3' then
+                    if not F or typeof(F) ~= 'Color3' then
                         return nil
                     end
 
-                    return Color3.new(math.clamp(H.R + A.R * B, 0, 1), math.clamp(H.G + A.G * B, 0, 1), math.clamp(H.B + A.B * B, 0, 1))
+                    return Color3.new(math.clamp(F.R + A.R * B, 0, 1), math.clamp(F.G + A.G * B, 0, 1), math.clamp(F.B + A.B * B, 0, 1))
                 end
             end
             function r.GetElementPosition(x, z, A, B)
@@ -3321,64 +3330,64 @@ do
                     return nil, 1
                 end
 
-                local F = #z
+                local C = #z
 
-                if F == 0 or A < 1 or A > F then
+                if C == 0 or A < 1 or A > C then
                     return nil, 2
                 end
 
-                local function isDelimiter(H)
-                    if H == nil then
+                local function isDelimiter(F)
+                    if F == nil then
                         return true
                     end
 
-                    local J = H.__type
+                    local G = F.__type
 
-                    return J == 'Divider' or J == 'Space' or J == 'Section'
+                    return G == 'Divider' or G == 'Space' or G == 'Section'
                 end
 
                 if isDelimiter(z[A]) then
                     return nil, 3
                 end
 
-                local function calculate(H, J)
-                    if J == 1 then
+                local function calculate(F, G)
+                    if G == 1 then
                         return 'Squircle'
                     end
-                    if H == 1 then
+                    if F == 1 then
                         return B and 'SquircleH-TL-TR' or 'Squircle-TL-TR'
                     end
-                    if H == J then
+                    if F == G then
                         return B and 'SquircleH-BL-BR' or 'Squircle-BL-BR'
                     end
 
                     return 'Square'
                 end
 
-                local H = 1
-                local J = 0
+                local F = 1
+                local G = 0
 
-                for L = 1, F do
-                    local M = z[L]
+                for H = 1, C do
+                    local J = z[H]
 
-                    if isDelimiter(M) then
-                        if A >= H and A <= L - 1 then
-                            local N = A - H + 1
+                    if isDelimiter(J) then
+                        if A >= F and A <= H - 1 then
+                            local L = A - F + 1
 
-                            return calculate(N, J)
+                            return calculate(L, G)
                         end
 
-                        H = L + 1
-                        J = 0
+                        F = H + 1
+                        G = 0
                     else
-                        J = J + 1
+                        G = G + 1
                     end
                 end
 
-                if A >= H and A <= F then
-                    local L = A - H + 1
+                if A >= F and A <= C then
+                    local H = A - F + 1
 
-                    return calculate(L, J)
+                    return calculate(H, G)
                 end
 
                 return nil, 4
@@ -4000,20 +4009,20 @@ do
 
                 for A = 1, 64 do
                     local B = k(t(j, 2), t(j, 13), t(j, 22))
-                    local F = k(n(j, m), n(j, p), n(m, p))
-                    local H = (B + F) % b
-                    local J = k(t(u, 6), t(u, 11), t(u, 25))
-                    local L = k(n(u, v), n(o(u), x))
-                    local M = (z + J + L + e[A] + i[A]) % b
+                    local C = k(n(j, m), n(j, p), n(m, p))
+                    local F = (B + C) % b
+                    local G = k(t(u, 6), t(u, 11), t(u, 25))
+                    local H = k(n(u, v), n(o(u), x))
+                    local J = (z + G + H + e[A] + i[A]) % b
 
                     z = x
                     x = v
                     v = u
-                    u = (r + M) % b
+                    u = (r + J) % b
                     r = p
                     p = m
                     m = j
-                    j = (M + H) % b
+                    j = (J + F) % b
                 end
 
                 h[1] = (h[1] + j) % b
@@ -4152,291 +4161,291 @@ do
             end
             local A = z(' ', '\t', '\r', '\n')
             local B = z(' ', '\t', '\r', '\n', ']', '}', ',')
-            local F = z('\\', '/', '"', 'b', 'f', 'n', 'r', 't', 'u')
-            local H = z('true', 'false', 'null')
-            local J = {
+            local C = z('\\', '/', '"', 'b', 'f', 'n', 'r', 't', 'u')
+            local F = z('true', 'false', 'null')
+            local G = {
                 ['true'] = true,
                 ['false'] = false,
                 null = nil,
             }
-            local L = function(L, M, N, O)
-                for P = M, #L do
-                    if N[L:sub(P, P)] ~= O then
-                        return P
+            local H = function(H, J, L, M)
+                for N = J, #H do
+                    if L[H:sub(N, N)] ~= M then
+                        return N
                     end
                 end
 
-                return #L + 1
+                return #H + 1
             end
-            local M = function(M, N, O)
-                local P = 1
-                local Q = 1
+            local J = function(J, L, M)
+                local N = 1
+                local O = 1
 
-                for R = 1, N - 1 do
-                    Q = Q + 1
+                for P = 1, L - 1 do
+                    O = O + 1
 
-                    if M:sub(R, R) == '\n' then
-                        P = P + 1
-                        Q = 1
+                    if J:sub(P, P) == '\n' then
+                        N = N + 1
+                        O = 1
                     end
                 end
 
-                error(string.format('%s at line %d col %d', O, P, Q))
+                error(string.format('%s at line %d col %d', M, N, O))
             end
-            local N = function(N)
-                local O = math.floor
+            local L = function(L)
+                local M = math.floor
 
-                if N <= 0x7f then
-                    return string.char(N)
-                elseif N <= 0x7ff then
-                    return string.char(O(N / 64) + 192, N % 64 + 128)
-                elseif N <= 0xffff then
-                    return string.char(O(N / 4096) + 224, O(N % 4096 / 64) + 128, N % 64 + 128)
-                elseif N <= 0x10ffff then
-                    return string.char(O(N / 262144) + 240, O(N % 262144 / 4096) + 128, O(N % 4096 / 64) + 128, N % 64 + 128)
+                if L <= 0x7f then
+                    return string.char(L)
+                elseif L <= 0x7ff then
+                    return string.char(M(L / 64) + 192, L % 64 + 128)
+                elseif L <= 0xffff then
+                    return string.char(M(L / 4096) + 224, M(L % 4096 / 64) + 128, L % 64 + 128)
+                elseif L <= 0x10ffff then
+                    return string.char(M(L / 262144) + 240, M(L % 262144 / 4096) + 128, M(L % 4096 / 64) + 128, L % 64 + 128)
                 end
 
-                error(string.format("invalid unicode codepoint '%x'", N))
+                error(string.format("invalid unicode codepoint '%x'", L))
             end
-            local O = function(O)
-                local P = tonumber(O:sub(1, 4), 16)
-                local Q = tonumber(O:sub(7, 10), 16)
+            local M = function(M)
+                local N = tonumber(M:sub(1, 4), 16)
+                local O = tonumber(M:sub(7, 10), 16)
 
-                if Q then
-                    return N((P - 0xd800) * 0x400 + Q - 0xdc00 + 0x10000)
+                if O then
+                    return L((N - 0xd800) * 0x400 + O - 0xdc00 + 0x10000)
                 else
-                    return N(P)
+                    return L(N)
                 end
             end
-            local P = function(P, Q)
-                local R = ''
-                local S = Q + 1
-                local T = S
+            local N = function(N, O)
+                local P = ''
+                local Q = O + 1
+                local R = Q
 
-                while S <= #P do
-                    local U = P:byte(S)
+                while Q <= #N do
+                    local S = N:byte(Q)
 
-                    if U < 32 then
-                        M(P, S, 'control character in string')
-                    elseif U == 92 then
-                        R = R .. P:sub(T, S - 1)
-                        S = S + 1
+                    if S < 32 then
+                        J(N, Q, 'control character in string')
+                    elseif S == 92 then
+                        P = P .. N:sub(R, Q - 1)
+                        Q = Q + 1
 
-                        local V = P:sub(S, S)
+                        local T = N:sub(Q, Q)
 
-                        if V == 'u' then
-                            local W = P:match('^[dD][89aAbB]%x%x\\u%x%x%x%x', S + 1) or P:match('^%x%x%x%x', S + 1) or M(P, S - 1, 'invalid unicode escape in string')
+                        if T == 'u' then
+                            local U = N:match('^[dD][89aAbB]%x%x\\u%x%x%x%x', Q + 1) or N:match('^%x%x%x%x', Q + 1) or J(N, Q - 1, 'invalid unicode escape in string')
 
-                            R = R .. O(W)
-                            S = S + #W
+                            P = P .. M(U)
+                            Q = Q + #U
                         else
-                            if not F[V] then
-                                M(P, S - 1, "invalid escape char '" .. V .. "' in string")
+                            if not C[T] then
+                                J(N, Q - 1, "invalid escape char '" .. T .. "' in string")
                             end
 
-                            R = R .. h[V]
+                            P = P .. h[T]
                         end
 
-                        T = S + 1
-                    elseif U == 34 then
-                        R = R .. P:sub(T, S - 1)
+                        R = Q + 1
+                    elseif S == 34 then
+                        P = P .. N:sub(R, Q - 1)
 
-                        return R, S + 1
+                        return P, Q + 1
                     end
 
-                    S = S + 1
+                    Q = Q + 1
                 end
 
-                M(P, Q, 'expected closing quote for string')
+                J(N, O, 'expected closing quote for string')
+            end
+            local O = function(O, P)
+                local Q = H(O, P, B)
+                local R = O:sub(P, Q - 1)
+                local S = tonumber(R)
+
+                if not S then
+                    J(O, P, "invalid number '" .. R .. "'")
+                end
+
+                return S, Q
+            end
+            local P = function(P, Q)
+                local R = H(P, Q, B)
+                local S = P:sub(Q, R - 1)
+
+                if not F[S] then
+                    J(P, Q, "invalid literal '" .. S .. "'")
+                end
+
+                return G[S], R
             end
             local Q = function(Q, R)
-                local S = L(Q, R, B)
-                local T = Q:sub(R, S - 1)
-                local U = tonumber(T)
+                local S = {}
+                local T = 1
 
-                if not U then
-                    M(Q, R, "invalid number '" .. T .. "'")
+                R = R + 1
+
+                while 1 do
+                    local U
+
+                    R = H(Q, R, A, true)
+
+                    if Q:sub(R, R) == ']' then
+                        R = R + 1
+
+                        break
+                    end
+
+                    U, R = x(Q, R)
+                    S[T] = U
+                    T = T + 1
+                    R = H(Q, R, A, true)
+
+                    local V = Q:sub(R, R)
+
+                    R = R + 1
+
+                    if V == ']' then
+                        break
+                    end
+                    if V ~= ',' then
+                        J(Q, R, "expected ']' or ','")
+                    end
                 end
 
-                return U, S
+                return S, R
             end
             local R = function(R, S)
-                local T = L(R, S, B)
-                local U = R:sub(S, T - 1)
+                local T = {}
 
-                if not H[U] then
-                    M(R, S, "invalid literal '" .. U .. "'")
-                end
-
-                return J[U], T
-            end
-            local S = function(S, T)
-                local U = {}
-                local V = 1
-
-                T = T + 1
+                S = S + 1
 
                 while 1 do
-                    local W
+                    local U, V
 
-                    T = L(S, T, A, true)
+                    S = H(R, S, A, true)
 
-                    if S:sub(T, T) == ']' then
-                        T = T + 1
+                    if R:sub(S, S) == '}' then
+                        S = S + 1
 
                         break
                     end
+                    if R:sub(S, S) ~= '"' then
+                        J(R, S, 'expected string for key')
+                    end
 
-                    W, T = x(S, T)
-                    U[V] = W
-                    V = V + 1
-                    T = L(S, T, A, true)
+                    U, S = x(R, S)
+                    S = H(R, S, A, true)
 
-                    local X = S:sub(T, T)
+                    if R:sub(S, S) ~= ':' then
+                        J(R, S, "expected ':' after key")
+                    end
 
-                    T = T + 1
+                    S = H(R, S + 1, A, true)
+                    V, S = x(R, S)
+                    T[U] = V
+                    S = H(R, S, A, true)
 
-                    if X == ']' then
+                    local W = R:sub(S, S)
+
+                    S = S + 1
+
+                    if W == '}' then
                         break
                     end
-                    if X ~= ',' then
-                        M(S, T, "expected ']' or ','")
+                    if W ~= ',' then
+                        J(R, S, "expected '}' or ','")
                     end
                 end
 
-                return U, T
+                return T, S
             end
-            local T = function(T, U)
-                local V = {}
-
-                U = U + 1
-
-                while 1 do
-                    local W, X
-
-                    U = L(T, U, A, true)
-
-                    if T:sub(U, U) == '}' then
-                        U = U + 1
-
-                        break
-                    end
-                    if T:sub(U, U) ~= '"' then
-                        M(T, U, 'expected string for key')
-                    end
-
-                    W, U = x(T, U)
-                    U = L(T, U, A, true)
-
-                    if T:sub(U, U) ~= ':' then
-                        M(T, U, "expected ':' after key")
-                    end
-
-                    U = L(T, U + 1, A, true)
-                    X, U = x(T, U)
-                    V[W] = X
-                    U = L(T, U, A, true)
-
-                    local Y = T:sub(U, U)
-
-                    U = U + 1
-
-                    if Y == '}' then
-                        break
-                    end
-                    if Y ~= ',' then
-                        M(T, U, "expected '}' or ','")
-                    end
-                end
-
-                return V, U
-            end
-            local U = {
-                ['"'] = P,
-                ['0'] = Q,
-                ['1'] = Q,
-                ['2'] = Q,
-                ['3'] = Q,
-                ['4'] = Q,
-                ['5'] = Q,
-                ['6'] = Q,
-                ['7'] = Q,
-                ['8'] = Q,
-                ['9'] = Q,
-                ['-'] = Q,
-                t = R,
-                f = R,
-                n = R,
-                ['['] = S,
-                ['{'] = T,
+            local S = {
+                ['"'] = N,
+                ['0'] = O,
+                ['1'] = O,
+                ['2'] = O,
+                ['3'] = O,
+                ['4'] = O,
+                ['5'] = O,
+                ['6'] = O,
+                ['7'] = O,
+                ['8'] = O,
+                ['9'] = O,
+                ['-'] = O,
+                t = P,
+                f = P,
+                n = P,
+                ['['] = Q,
+                ['{'] = R,
             }
 
-            x = function(V, W)
-                local X = V:sub(W, W)
-                local Y = U[X]
+            x = function(T, U)
+                local V = T:sub(U, U)
+                local W = S[V]
 
-                if Y then
-                    return Y(V, W)
+                if W then
+                    return W(T, U)
                 end
 
-                M(V, W, "unexpected character '" .. X .. "'")
+                J(T, U, "unexpected character '" .. V .. "'")
             end
 
-            local V = function(V)
-                if type(V) ~= 'string' then
-                    error('expected argument of type string, got ' .. type(V))
+            local T = function(T)
+                if type(T) ~= 'string' then
+                    error('expected argument of type string, got ' .. type(T))
                 end
 
-                local W, X = x(V, L(V, 1, A, true))
+                local U, V = x(T, H(T, 1, A, true))
 
-                X = L(V, X, A, true)
+                V = H(T, V, A, true)
 
-                if X <= #V then
-                    M(V, X, 'trailing garbage')
+                if V <= #T then
+                    J(T, V, 'trailing garbage')
                 end
 
-                return W
+                return U
             end
-            local W, X, Y = v, V, Z
-            local _ = {}
-            local aa = (cloneref or clonereference or function(aa)
-                return aa
+            local U, V, W = v, T, Z
+            local X = {}
+            local Y = (cloneref or clonereference or function(Y)
+                return Y
             end)
 
-            function _.New(ab, ac)
-                local ad = ab
-                local ae = ac
-                local af = true
-                local ag = function(ag) end
+            function X.New(_, aa)
+                local ab = _
+                local ac = aa
+                local ad = true
+                local ae = function(ae) end
 
                 repeat
                     task.wait(1)
                 until game:IsLoaded()
 
-                local ah = false
-                local ai, aj, ak, al, am, an, ao, ap = request or http_request or syn_request, string.char, tostring, string.sub, os.time, math.random, math.floor, gethwid or function(
+                local af = false
+                local ag, ah, ai, aj, ak, al, am, an = request or http_request or syn_request, string.char, tostring, string.sub, os.time, math.random, math.floor, gethwid or function(
                 )
-                    return aa(game:GetService'Players').LocalPlayer.UserId
+                    return Y(game:GetService'Players').LocalPlayer.UserId
                 end
-                local aq, ar = '', 0
-                local as = 'https://api.platoboost.app'
-                local at = ai{
-                    Url = as .. '/public/connectivity',
+                local ao, ap = '', 0
+                local aq = 'https://api.platoboost.app'
+                local ar = ag{
+                    Url = aq .. '/public/connectivity',
                     Method = 'GET',
                 }
 
-                if at.StatusCode ~= 200 and at.StatusCode ~= 429 then
-                    as = 'https://api.platoboost.net'
+                if ar.StatusCode ~= 200 and ar.StatusCode ~= 429 then
+                    aq = 'https://api.platoboost.net'
                 end
 
                 function cacheLink()
-                    if ar + (600) < am() then
-                        local au = ai{
-                            Url = as .. '/public/start',
+                    if ap + (600) < ak() then
+                        local as = ag{
+                            Url = aq .. '/public/start',
                             Method = 'POST',
-                            Body = W{
-                                service = ad,
-                                identifier = Y(ap()),
+                            Body = U{
+                                service = ab,
+                                identifier = W(an()),
                             },
                             Headers = {
                                 ['Content-Type'] = 'application/json',
@@ -4444,103 +4453,103 @@ do
                             },
                         }
 
-                        if au.StatusCode == 200 then
-                            local av = X(au.Body)
+                        if as.StatusCode == 200 then
+                            local at = V(as.Body)
 
-                            if av.success == true then
-                                aq = av.data.url
-                                ar = am()
+                            if at.success == true then
+                                ao = at.data.url
+                                ap = ak()
 
-                                return true, aq
+                                return true, ao
                             else
-                                ag(av.message)
+                                ae(at.message)
 
-                                return false, av.message
+                                return false, at.message
                             end
-                        elseif au.StatusCode == 429 then
-                            local av = 
+                        elseif as.StatusCode == 429 then
+                            local at = 
 [[you are being rate limited, please wait 20 seconds and try again.]]
 
-                            ag(av)
+                            ae(at)
 
-                            return false, av
+                            return false, at
                         end
 
-                        local av = 'Failed to cache link.'
+                        local at = 'Failed to cache link.'
 
-                        ag(av)
+                        ae(at)
 
-                        return false, av
+                        return false, at
                     else
-                        return true, aq
+                        return true, ao
                     end
                 end
 
                 cacheLink()
 
-                local au = function()
-                    local au = ''
+                local as = function()
+                    local as = ''
 
-                    for av = 1, 16 do
-                        au = au .. aj(ao(an() * (26)) + 97)
+                    for at = 1, 16 do
+                        as = as .. ah(am(al() * (26)) + 97)
                     end
 
-                    return au
+                    return as
                 end
 
-                for av = 1, 5 do
-                    local aw = au()
+                for at = 1, 5 do
+                    local au = as()
 
                     task.wait(0.2)
 
-                    if au() == aw then
-                        local ax = 'platoboost nonce error.'
+                    if as() == au then
+                        local av = 'platoboost nonce error.'
 
-                        ag(ax)
-                        error(ax)
+                        ae(av)
+                        error(av)
                     end
                 end
 
-                local av = function()
-                    local av, aw = cacheLink()
+                local at = function()
+                    local at, au = cacheLink()
 
-                    if av then
-                        return aw
+                    if at then
+                        return au
                     end
 
                     return nil
                 end
-                local aw = function(aw)
-                    local ax = au()
-                    local ay = as .. '/public/redeem/' .. ak(ad)
-                    local az = {
-                        identifier = Y(ap()),
-                        key = aw,
+                local au = function(au)
+                    local av = as()
+                    local aw = aq .. '/public/redeem/' .. ai(ab)
+                    local ax = {
+                        identifier = W(an()),
+                        key = au,
                     }
 
-                    if af then
-                        az.nonce = ax
+                    if ad then
+                        ax.nonce = av
                     end
 
-                    local aA = ai{
-                        Url = ay,
+                    local ay = ag{
+                        Url = aw,
                         Method = 'POST',
-                        Body = W(az),
+                        Body = U(ax),
                         Headers = {
                             ['Content-Type'] = 'application/json',
                         },
                     }
 
-                    if aA.StatusCode == 200 then
-                        local aB = X(aA.Body)
+                    if ay.StatusCode == 200 then
+                        local az = V(ay.Body)
 
-                        if aB.success == true then
-                            if aB.data.valid == true then
-                                if af then
-                                    if aB.data.hash == Y('true' .. '-' .. ax .. '-' .. ae) then
+                        if az.success == true then
+                            if az.data.valid == true then
+                                if ad then
+                                    if az.data.hash == W('true' .. '-' .. av .. '-' .. ac) then
                                         return true
                                     else
-                                        ag'failed to verify integrity.'
+                                        ae'failed to verify integrity.'
 
                                         return false
                                     end
@@ -4548,62 +4557,62 @@ do
                                     return true
                                 end
                             else
-                                ag'key is invalid.'
+                                ae'key is invalid.'
 
                                 return false
                             end
                         else
-                            if al(aB.message, 1, 27) == 'unique constraint violation' then
-                                ag
+                            if aj(az.message, 1, 27) == 'unique constraint violation' then
+                                ae
 [[you already have an active key, please wait for it to expire before redeeming it.]]
 
                                 return false
                             else
-                                ag(aB.message)
+                                ae(az.message)
 
                                 return false
                             end
                         end
-                    elseif aA.StatusCode == 429 then
-                        ag
+                    elseif ay.StatusCode == 429 then
+                        ae
 [[you are being rate limited, please wait 20 seconds and try again.]]
 
                         return false
                     else
-                        ag
+                        ae
 [[server returned an invalid status code, please try again later.]]
 
                         return false
                     end
                 end
-                local ax = function(ax)
-                    if ah == true then
+                local av = function(av)
+                    if af == true then
                         return false, 'A request is already being sent, please slow down.'
                     else
-                        ah = true
+                        af = true
                     end
 
-                    local ay = au()
-                    local az = as .. '/public/whitelist/' .. ak(ad) .. '?identifier=' .. Y(ap()) .. '&key=' .. ax
+                    local aw = as()
+                    local ax = aq .. '/public/whitelist/' .. ai(ab) .. '?identifier=' .. W(an()) .. '&key=' .. av
 
-                    if af then
-                        az = az .. '&nonce=' .. ay
+                    if ad then
+                        ax = ax .. '&nonce=' .. aw
                     end
 
-                    local aA = ai{
-                        Url = az,
+                    local ay = ag{
+                        Url = ax,
                         Method = 'GET',
                     }
 
-                    ah = false
+                    af = false
 
-                    if aA.StatusCode == 200 then
-                        local aB = X(aA.Body)
+                    if ay.StatusCode == 200 then
+                        local az = V(ay.Body)
 
-                        if aB.success == true then
-                            if aB.data.valid == true then
-                                if af then
-                                    if aB.data.hash == Y('true' .. '-' .. ay .. '-' .. ae) then
+                        if az.success == true then
+                            if az.data.valid == true then
+                                if ad then
+                                    if az.data.hash == W('true' .. '-' .. aw .. '-' .. ac) then
                                         return true, ''
                                     else
                                         return false, 'failed to verify integrity.'
@@ -4612,16 +4621,16 @@ do
                                     return true
                                 end
                             else
-                                if al(ax, 1, 4) == 'KEY_' then
-                                    return true, aw(ax)
+                                if aj(av, 1, 4) == 'KEY_' then
+                                    return true, au(av)
                                 else
                                     return false, 'Key is invalid.'
                                 end
                             end
                         else
-                            return false, aB.message
+                            return false, az.message
                         end
-                    elseif aA.StatusCode == 429 then
+                    elseif ay.StatusCode == 429 then
                         return false, 
 [[You are being rate limited, please wait 20 seconds and try again.]]
                     else
@@ -4629,36 +4638,36 @@ do
 [[Server returned an invalid status code, please try again later.]]
                     end
                 end
-                local ay = function(ay)
-                    local az = au()
-                    local aA = as .. '/public/flag/' .. ak(ad) .. '?name=' .. ay
+                local aw = function(aw)
+                    local ax = as()
+                    local ay = aq .. '/public/flag/' .. ai(ab) .. '?name=' .. aw
 
-                    if af then
-                        aA = aA .. '&nonce=' .. az
+                    if ad then
+                        ay = ay .. '&nonce=' .. ax
                     end
 
-                    local aB = ai{
-                        Url = aA,
+                    local az = ag{
+                        Url = ay,
                         Method = 'GET',
                     }
 
-                    if aB.StatusCode == 200 then
-                        local aC = X(aB.Body)
+                    if az.StatusCode == 200 then
+                        local aA = V(az.Body)
 
-                        if aC.success == true then
-                            if af then
-                                if aC.data.hash == Y(ak(aC.data.value) .. '-' .. az .. '-' .. ae) then
-                                    return aC.data.value
+                        if aA.success == true then
+                            if ad then
+                                if aA.data.hash == W(ai(aA.data.value) .. '-' .. ax .. '-' .. ac) then
+                                    return aA.data.value
                                 else
-                                    ag'failed to verify integrity.'
+                                    ae'failed to verify integrity.'
 
                                     return nil
                                 end
                             else
-                                return aC.data.value
+                                return aA.data.value
                             end
                         else
-                            ag(aC.message)
+                            ae(aA.message)
 
                             return nil
                         end
@@ -4668,13 +4677,13 @@ do
                 end
 
                 return {
-                    Verify = ax,
-                    GetFlag = ay,
-                    Copy = av,
+                    Verify = av,
+                    GetFlag = aw,
+                    Copy = at,
                 }
             end
 
-            return _
+            return X
         end
 
         function a.i(): typeof(__modImpl())
@@ -5688,9 +5697,9 @@ do
                 end
                 if ag.KeySystem.API then
                     local aA = 240
-                    local aB = false
-                    local aC = ae('Get key', 'key', nil, 'Secondary', ax.Frame)
-                    local b = ab.NewRoundFrame(99, 'Squircle', {
+                    local b = false
+                    local d = ae('Get key', 'key', nil, 'Secondary', ax.Frame)
+                    local f = ab.NewRoundFrame(99, 'Squircle', {
                         Size = UDim2.new(0, 1, 1, 0),
                         ThemeTag = {
                             ImageColor3 = 'Text',
@@ -5702,26 +5711,26 @@ do
                         BackgroundTransparency = 1,
                         Size = UDim2.new(0, 0, 1, 0),
                         AutomaticSize = 'X',
-                        Parent = aC.Frame,
+                        Parent = d.Frame,
                     }, {
-                        b,
+                        f,
                         ac('UIPadding', {
                             PaddingLeft = UDim.new(0, 5),
                             PaddingRight = UDim.new(0, 5),
                         }),
                     })
 
-                    local d = ab.Image('chevron-down', 'chevron-down', 0, 'Temp', 'KeySystem', true)
+                    local g = ab.Image('chevron-down', 'chevron-down', 0, 'Temp', 'KeySystem', true)
 
-                    d.Size = UDim2.new(1, 0, 1, 0)
+                    g.Size = UDim2.new(1, 0, 1, 0)
 
                     ac('Frame', {
                         Size = UDim2.new(0, 21, 0, 21),
-                        Parent = aC.Frame,
+                        Parent = d.Frame,
                         BackgroundTransparency = 1,
-                    }, {d})
+                    }, {g})
 
-                    local f = ab.NewRoundFrame(15, 'Squircle', {
+                    local h = ab.NewRoundFrame(15, 'Squircle', {
                         Size = UDim2.new(1, 0, 0, 0),
                         AutomaticSize = 'Y',
                         ThemeTag = {
@@ -5739,14 +5748,14 @@ do
                             Padding = UDim.new(0, 5),
                         }),
                     })
-                    local g = ac('Frame', {
+                    local i = ac('Frame', {
                         BackgroundTransparency = 1,
                         Size = UDim2.new(0, aA, 0, 0),
                         ClipsDescendants = true,
                         AnchorPoint = Vector2.new(1, 0),
-                        Parent = aC,
+                        Parent = d,
                         Position = UDim2.new(1, 0, 1, 15),
-                    }, {f})
+                    }, {h})
 
                     ac('TextLabel', {
                         Text = 'Select Service',
@@ -5761,7 +5770,7 @@ do
                         AutomaticSize = 'Y',
                         TextWrapped = true,
                         TextXAlignment = 'Left',
-                        Parent = f,
+                        Parent = h,
                     }, {
                         ac('UIPadding', {
                             PaddingTop = UDim.new(0, 10),
@@ -5771,33 +5780,33 @@ do
                         }),
                     })
 
-                    for h, i in next, ag.KeySystem.API do
-                        local j = ag.WindUI.Services[i.Type]
+                    for j, m in next, ag.KeySystem.API do
+                        local p = ag.WindUI.Services[m.Type]
 
-                        if j then
-                            local m = {}
+                        if p then
+                            local r = {}
 
-                            for p, r in next, j.Args do
-                                table.insert(m, i[r])
+                            for u, v in next, p.Args do
+                                table.insert(r, m[v])
                             end
 
-                            local p = j.New(table.unpack(m))
+                            local u = p.New(table.unpack(r))
 
-                            p.Type = i.Type
+                            u.Type = m.Type
 
-                            table.insert(am, p)
+                            table.insert(am, u)
 
-                            local r = ab.Image(i.Icon or j.Icon or Icons[i.Type] or 'user', i.Icon or j.Icon or Icons[i.Type] or 'user', 0, 'Temp', 'KeySystem', true)
+                            local v = ab.Image(m.Icon or p.Icon or Icons[m.Type] or 'user', m.Icon or p.Icon or Icons[m.Type] or 'user', 0, 'Temp', 'KeySystem', true)
 
-                            r.Size = UDim2.new(0, 24, 0, 24)
+                            v.Size = UDim2.new(0, 24, 0, 24)
 
-                            local u = ab.NewRoundFrame(10, 'Squircle', {
+                            local x = ab.NewRoundFrame(10, 'Squircle', {
                                 Size = UDim2.new(1, 0, 0, 0),
                                 ThemeTag = {
                                     ImageColor3 = 'Text',
                                 },
                                 ImageTransparency = 1,
-                                Parent = f,
+                                Parent = h,
                                 AutomaticSize = 'Y',
                             }, {
                                 ac('UIListLayout', {
@@ -5805,7 +5814,7 @@ do
                                     Padding = UDim.new(0, 10),
                                     VerticalAlignment = 'Center',
                                 }),
-                                r,
+                                v,
                                 ac('UIPadding', {
                                     PaddingTop = UDim.new(0, 10),
                                     PaddingLeft = UDim.new(0, 10),
@@ -5823,7 +5832,7 @@ do
                                         HorizontalAlignment = 'Center',
                                     }),
                                     ac('TextLabel', {
-                                        Text = i.Title or j.Name,
+                                        Text = m.Title or p.Name,
                                         BackgroundTransparency = 1,
                                         FontFace = Font.new(ab.Font, Enum.FontWeight.Medium),
                                         ThemeTag = {
@@ -5837,7 +5846,7 @@ do
                                         TextXAlignment = 'Left',
                                     }),
                                     ac('TextLabel', {
-                                        Text = i.Desc or '',
+                                        Text = m.Desc or '',
                                         BackgroundTransparency = 1,
                                         FontFace = Font.new(ab.Font, Enum.FontWeight.Regular),
                                         ThemeTag = {
@@ -5848,35 +5857,35 @@ do
                                         Size = UDim2.new(1, 0, 0, 0),
                                         AutomaticSize = 'Y',
                                         TextWrapped = true,
-                                        Visible = i.Desc and true or false,
+                                        Visible = m.Desc and true or false,
                                         TextXAlignment = 'Left',
                                     }),
                                 }),
                             }, true)
 
-                            ab.AddSignal(u.MouseEnter, function()
-                                ad(u, 0.08, {ImageTransparency = 0.95}):Play()
+                            ab.AddSignal(x.MouseEnter, function()
+                                ad(x, 0.08, {ImageTransparency = 0.95}):Play()
                             end)
-                            ab.AddSignal(u.InputEnded, function()
-                                ad(u, 0.08, {ImageTransparency = 1}):Play()
+                            ab.AddSignal(x.InputEnded, function()
+                                ad(x, 0.08, {ImageTransparency = 1}):Play()
                             end)
-                            ab.AddSignal(u.MouseButton1Click, function()
-                                local v, x = pcall(p.Copy)
+                            ab.AddSignal(x.MouseButton1Click, function()
+                                local z, A = pcall(u.Copy)
 
-                                if not v or type(x) ~= 'string' or x == '' then
+                                if not z or type(A) ~= 'string' or A == '' then
                                     ag.WindUI:Notify{
                                         Title = 'Key System. Error',
-                                        Content = v and 'The key service did not return a URL.' or tostring(x),
+                                        Content = z and 'The key service did not return a URL.' or tostring(A),
                                         Icon = 'triangle-alert',
                                     }
 
                                     return
                                 end
 
-                                local z = setclipboard or toclipboard
+                                local B = setclipboard or toclipboard
 
-                                assert(type(z) == 'function', 'executor does not provide clipboard access')
-                                z(x)
+                                assert(type(B) == 'function', 'executor does not provide clipboard access')
+                                B(A)
                                 ag.WindUI:Notify{
                                     Title = 'Key System',
                                     Content = 'Key link copied to clipboard.',
@@ -5886,20 +5895,20 @@ do
                         end
                     end
 
-                    ab.AddSignal(aC.MouseButton1Click, function()
-                        if not aB then
-                            ad(g, 0.3, {
-                                Size = UDim2.new(0, aA, 0, f.AbsoluteSize.Y + 1),
+                    ab.AddSignal(d.MouseButton1Click, function()
+                        if not b then
+                            ad(i, 0.3, {
+                                Size = UDim2.new(0, aA, 0, h.AbsoluteSize.Y + 1),
                             }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
-                            ad(d, 0.3, {Rotation = 180}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+                            ad(g, 0.3, {Rotation = 180}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
                         else
-                            ad(g, 0.25, {
+                            ad(i, 0.25, {
                                 Size = UDim2.new(0, aA, 0, 0),
                             }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
-                            ad(d, 0.25, {Rotation = 0}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+                            ad(g, 0.25, {Rotation = 0}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
                         end
 
-                        aB = not aB
+                        b = not b
                     end)
                 end
 
@@ -5916,12 +5925,12 @@ do
 
                 local aA = ae('Submit', 'arrow-right', function()
                     local aA = tostring(an or 'empty')
-                    local aB = ag.Folder or ag.Title
+                    local b = ag.Folder or ag.Title
 
                     if ag.KeySystem.KeyValidator then
-                        local aC = ag.KeySystem.KeyValidator(aA)
+                        local d = ag.KeySystem.KeyValidator(aA)
 
-                        if aC then
+                        if d then
                             if ag.KeySystem.SaveKey then
                                 handleSuccess(aA)
                             else
@@ -5937,9 +5946,9 @@ do
                             }
                         end
                     elseif not ag.KeySystem.API then
-                        local aC = type(ag.KeySystem.Key) == 'table' and table.find(ag.KeySystem.Key, aA) or ag.KeySystem.Key == aA
+                        local d = type(ag.KeySystem.Key) == 'table' and table.find(ag.KeySystem.Key, aA) or ag.KeySystem.Key == aA
 
-                        if aC then
+                        if d then
                             if ag.KeySystem.SaveKey then
                                 handleSuccess(aA)
                             else
@@ -5949,26 +5958,26 @@ do
                             end
                         end
                     else
-                        local aC, b
+                        local d, f
 
-                        for d, f in next, am do
-                            local g, h = f.Verify(aA)
+                        for g, h in next, am do
+                            local i, j = h.Verify(aA)
 
-                            if g then
-                                aC, b = true, h
+                            if i then
+                                d, f = true, j
 
                                 break
                             end
 
-                            b = h
+                            f = j
                         end
 
-                        if aC then
+                        if d then
                             handleSuccess(aA)
                         else
                             ag.WindUI:Notify{
                                 Title = 'Key System. Error',
-                                Content = b,
+                                Content = f,
                                 Icon = 'triangle-alert',
                             }
                         end
@@ -7185,10 +7194,10 @@ do
                             local ay = math.max(aw - ax, 0)
                             local az = ak.AbsoluteSize.Y
                             local aA = al.AbsoluteSize.Y
-                            local aB = math.max(az - aA, 1)
-                            local aC = av * (ay / aB)
+                            local b = math.max(az - aA, 1)
+                            local d = av * (ay / b)
 
-                            af.CanvasPosition = Vector2.new(af.CanvasPosition.X, math.clamp(at + aC, 0, ay))
+                            af.CanvasPosition = Vector2.new(af.CanvasPosition.X, math.clamp(at + d, 0, ay))
                         end
                     end)
                     aq = ad.AddSignal(ac.InputEnded, function(au)
@@ -8534,7 +8543,7 @@ do
                         },
                     }),
                 }, nil, true)
-                local aB, aC = ac(ah.UICorner, 'Squircle', {
+                local b, d = ac(ah.UICorner, 'Squircle', {
                     Size = UDim2.new(1, 0, 1, 0),
                     ImageTransparency = 1,
                     Active = false,
@@ -8565,7 +8574,7 @@ do
                         Padding = UDim.new(0, 8),
                     }),
                 }, nil, true)
-                local b, d = ac(ah.UICorner, 'Squircle', {
+                local f, g = ac(ah.UICorner, 'Squircle', {
                     Size = UDim2.new(1, 0, 0, 0),
                     AutomaticSize = 'Y',
                     ImageTransparency = ah.Color and 0.05 or (not ag.Window.NewElements and 0.93 or nil),
@@ -8586,45 +8595,45 @@ do
                     }),
                 }, true, true)
 
-                ah.UIElements.Main = b
+                ah.UIElements.Main = f
                 ah.UIElements.Locked = av
 
                 if ah.Hover then
-                    aa.AddSignal(b.MouseEnter, function()
+                    aa.AddSignal(f.MouseEnter, function()
                         if am then
-                            ad(aB, 0.12, {ImageTransparency = 0.9}):Play()
+                            ad(b, 0.12, {ImageTransparency = 0.9}):Play()
                             ad(aA, 0.12, {ImageTransparency = 0.8}):Play()
-                            aa.AddSignal(b.MouseMoved, function(f, g)
-                                aB.HoverGradient.Offset = Vector2.new(((f - b.AbsolutePosition.X) / b.AbsoluteSize.X) - 0.5, 0)
-                                aA.HoverGradient.Offset = Vector2.new(((f - b.AbsolutePosition.X) / b.AbsoluteSize.X) - 0.5, 0)
+                            aa.AddSignal(f.MouseMoved, function(h, i)
+                                b.HoverGradient.Offset = Vector2.new(((h - f.AbsolutePosition.X) / f.AbsoluteSize.X) - 0.5, 0)
+                                aA.HoverGradient.Offset = Vector2.new(((h - f.AbsolutePosition.X) / f.AbsoluteSize.X) - 0.5, 0)
                             end)
                         end
                     end)
-                    aa.AddSignal(b.InputEnded, function()
+                    aa.AddSignal(f.InputEnded, function()
                         if am then
-                            ad(aB, 0.12, {ImageTransparency = 1}):Play()
+                            ad(b, 0.12, {ImageTransparency = 1}):Play()
                             ad(aA, 0.12, {ImageTransparency = 1}):Play()
                         end
                     end)
                 end
 
-                function ah.SetTitle(f, g)
-                    ah.Title = g
-                    aq.Text = g
+                function ah.SetTitle(h, i)
+                    ah.Title = i
+                    aq.Text = i
                 end
-                function ah.SetDesc(f, g)
-                    ah.Desc = g
-                    ar.Text = g or ''
+                function ah.SetDesc(h, i)
+                    ah.Desc = i
+                    ar.Text = i or ''
 
-                    if not g then
+                    if not i then
                         ar.Visible = false
                     elseif not ar.Visible then
                         ar.Visible = true
                     end
                 end
-                function ah.Colorize(f, g, h)
+                function ah.Colorize(h, i, j)
                     if ah.Color then
-                        g[h] = typeof(ah.Color) == 'string' and GetTextColorForHSB(Color3.fromHex(aa.Colors[ah.Color])) or typeof(ah.Color) == 'Color3' and GetTextColorForHSB(ah.Color) or nil
+                        i[j] = typeof(ah.Color) == 'string' and GetTextColorForHSB(Color3.fromHex(aa.Colors[ah.Color])) or typeof(ah.Color) == 'Color3' and GetTextColorForHSB(ah.Color) or nil
                     end
                 end
 
@@ -8645,26 +8654,26 @@ do
                     end)
                 end
 
-                function ah.SetThumbnail(f, g, h)
-                    ah.Thumbnail = g
+                function ah.SetThumbnail(h, i, j)
+                    ah.Thumbnail = i
 
-                    if h then
-                        ah.ThumbnailSize = h
-                        al = h
+                    if j then
+                        ah.ThumbnailSize = j
+                        al = j
                     end
                     if ao then
-                        if g then
+                        if i then
                             ao:Destroy()
 
-                            ao = aa.Image(g, ah.Title, ah.UICorner - 3, ag.Window.Folder, 'Thumbnail', false, ah.IconThemed)
+                            ao = aa.Image(i, ah.Title, ah.UICorner - 3, ag.Window.Folder, 'Thumbnail', false, ah.IconThemed)
 
                             if ao then
                                 ao.Size = UDim2.new(1, 0, 0, al)
                                 ao.Parent = ah.UIElements.Container
 
-                                local i = ah.UIElements.Container:FindFirstChild'UIListLayout'
+                                local m = ah.UIElements.Container:FindFirstChild'UIListLayout'
 
-                                if i then
+                                if m then
                                     ao.LayoutOrder = -1
                                 end
                             end
@@ -8672,37 +8681,37 @@ do
                             ao.Visible = false
                         end
                     else
-                        if g then
-                            ao = aa.Image(g, ah.Title, ah.UICorner - 3, ag.Window.Folder, 'Thumbnail', false, ah.IconThemed)
+                        if i then
+                            ao = aa.Image(i, ah.Title, ah.UICorner - 3, ag.Window.Folder, 'Thumbnail', false, ah.IconThemed)
 
                             if ao then
                                 ao.Size = UDim2.new(1, 0, 0, al)
                                 ao.Parent = ah.UIElements.Container
 
-                                local i = ah.UIElements.Container:FindFirstChild'UIListLayout'
+                                local m = ah.UIElements.Container:FindFirstChild'UIListLayout'
 
-                                if i then
+                                if m then
                                     ao.LayoutOrder = -1
                                 end
                             end
                         end
                     end
                 end
-                function ah.SetImage(f, g, h)
-                    ah.Image = g
+                function ah.SetImage(h, i, j)
+                    ah.Image = i
 
-                    if h then
-                        ah.ImageSize = h
-                        ak = h
+                    if j then
+                        ah.ImageSize = j
+                        ak = j
                     end
-                    if g then
-                        local i = ap and ap.Parent or ah.UIElements.Container.TitleFrame
+                    if i then
+                        local m = ap and ap.Parent or ah.UIElements.Container.TitleFrame
 
                         if ap then
                             ap:Destroy()
                         end
 
-                        ap = aa.Image(g, g, ah.UICorner - 3, ag.Window.Folder, 'Image', not ah.Color and true or false)
+                        ap = aa.Image(i, i, ah.UICorner - 3, ag.Window.Folder, 'Image', not ah.Color and true or false)
 
                         if ap then
                             if typeof(ah.Color) == 'string' and not string.find(ah.Image, 'rbxthumb') then
@@ -8712,7 +8721,7 @@ do
                             end
 
                             ap.Visible = true
-                            ap.Parent = i
+                            ap.Parent = m
                             ap.LayoutOrder = -99
                             ap.Size = UDim2.new(0, ak, 0, ak)
                             an = ah.ImageSize + ah.UIPadding
@@ -8728,22 +8737,22 @@ do
                     ah.UIElements.Container.TitleFrame.TitleFrame.Size = UDim2.new(1, 
 -an, 1, 0)
                 end
-                function ah.Destroy(f)
-                    b:Destroy()
+                function ah.Destroy(h)
+                    f:Destroy()
                 end
-                function ah.Lock(f, g)
+                function ah.Lock(h, i)
                     am = false
                     av.Active = true
                     av.Visible = true
-                    at.Text = g or 'Locked'
+                    at.Text = i or 'Locked'
                 end
-                function ah.Unlock(f)
+                function ah.Unlock(h)
                     am = true
                     av.Active = false
                     av.Visible = false
                 end
-                function ah.Highlight(f)
-                    local g = ab('UIGradient', {
+                function ah.Highlight(h)
+                    local i = ab('UIGradient', {
                         Color = ColorSequence.new{
                             ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
                             ColorSequenceKeypoint.new(0.5, Color3.new(1, 1, 1)),
@@ -8760,7 +8769,7 @@ do
                         Offset = Vector2.new(-1, 0),
                         Parent = ax,
                     })
-                    local h = ab('UIGradient', {
+                    local j = ab('UIGradient', {
                         Color = ColorSequence.new{
                             ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
                             ColorSequenceKeypoint.new(0.5, Color3.new(1, 1, 1)),
@@ -8781,10 +8790,10 @@ do
                     ax.ImageTransparency = 0.65
                     ay.ImageTransparency = 0.88
 
-                    ad(g, 0.75, {
+                    ad(i, 0.75, {
                         Offset = Vector2.new(1, 0),
                     }):Play()
-                    ad(h, 0.75, {
+                    ad(j, 0.75, {
                         Offset = Vector2.new(1, 0),
                     }):Play()
                     task.spawn(function()
@@ -8793,19 +8802,19 @@ do
                         ax.ImageTransparency = 1
                         ay.ImageTransparency = 1
 
-                        g:Destroy()
-                        h:Destroy()
+                        i:Destroy()
+                        j:Destroy()
                     end)
                 end
-                function ah.UpdateShape(f)
+                function ah.UpdateShape(h)
                     if ag.Window.NewElements then
-                        local g = aa:GetElementPosition(f.Elements, ah.Index, ag.ParentConfig.ParentTable.__type == 'HStack' or ag.ParentConfig.ParentTable.__type == 'Group')
+                        local i = aa:GetElementPosition(h.Elements, ah.Index, ag.ParentConfig.ParentTable.__type == 'HStack' or ag.ParentConfig.ParentTable.__type == 'Group')
 
-                        if g and b then
-                            d:SetType(g)
-                            aw:SetType(g)
-                            az:SetType(g)
-                            aC:SetType(g)
+                        if i and f then
+                            g:SetType(i)
+                            aw:SetType(i)
+                            az:SetType(i)
+                            d:SetType(i)
                         end
                     end
                 end
@@ -9200,11 +9209,11 @@ do
                             ad(ao, 0.1, {ImageTransparency = 0}):Play()
                         end
 
-                        local az, aA, aB = am:GetGlassFrame(1)
+                        local az, aA, b = am:GetGlassFrame(1)
 
                         aq.Frame.Bar.Highlight.Glass.Image = az
                         aq.Frame.Bar.Highlight.Glass.ImageRectSize = aA
-                        aq.Frame.Bar.Highlight.Glass.ImageRectOffset = aB
+                        aq.Frame.Bar.Highlight.Glass.ImageRectOffset = b
                     else
                         ad(aq.Layer, 0.1, {ImageTransparency = 1}):Play()
                         ab.SetThemeTag(aq.Frame.Bar.Highlight.Glass, {
@@ -9216,11 +9225,11 @@ do
                             ad(ao, 0.1, {ImageTransparency = 1}):Play()
                         end
 
-                        local az, aA, aB = am:GetGlassFrame(0)
+                        local az, aA, b = am:GetGlassFrame(0)
 
                         aq.Frame.Bar.Highlight.Glass.Image = az
                         aq.Frame.Bar.Highlight.Glass.ImageRectSize = aA
-                        aq.Frame.Bar.Highlight.Glass.ImageRectOffset = aB
+                        aq.Frame.Bar.Highlight.Glass.ImageRectOffset = b
                     end
 
                     ax = ax ~= false
@@ -9238,8 +9247,8 @@ do
                         local ay = aw.Position.X
                         local az = aw.Position.Y
                         local aA = aq.Frame.Position.X.Offset
-                        local aB = false
-                        local aC = false
+                        local b = false
+                        local d = false
 
                         ad(aq.Frame.Bar.UIScale, 0.28, {Scale = 1.5}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
                         ad(aq.Frame.Bar.Highlight.BarOverlay, 0.28, {ImageTransparency = 0.86}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
@@ -9248,36 +9257,36 @@ do
                             ab.DisconnectSignal(ar)
                         end
 
-                        ar = ab.AddSignal(ae.InputChanged, function(b)
+                        ar = ab.AddSignal(ae.InputChanged, function(f)
                             if not al.Window.IsToggleDragging then
                                 return
                             end
-                            if b.UserInputType ~= Enum.UserInputType.MouseMovement and b.UserInputType ~= Enum.UserInputType.Touch then
+                            if f.UserInputType ~= Enum.UserInputType.MouseMovement and f.UserInputType ~= Enum.UserInputType.Touch then
                                 return
                             end
-                            if aB then
+                            if b then
                                 return
                             end
 
-                            local d = math.abs(b.Position.X - ay)
+                            local g = math.abs(f.Position.X - ay)
 
-                            math.abs(b.Position.Y - az)
+                            math.abs(f.Position.Y - az)
 
-                            if not aC and d > 8 then
-                                aC = true
+                            if not d and g > 8 then
+                                d = true
                             end
 
-                            local f = b.Position.X - ay
-                            local g = math.max(2, math.min(aA + f, au - at - 2))
-                            local h = math.clamp((g - 2) / (au - at - 4), 0, 1)
-                            local i, j, m = am:GetGlassFrame(h)
+                            local h = f.Position.X - ay
+                            local i = math.max(2, math.min(aA + h, au - at - 2))
+                            local j = math.clamp((i - 2) / (au - at - 4), 0, 1)
+                            local m, p, r = am:GetGlassFrame(j)
 
-                            aq.Frame.Bar.Highlight.Glass.Image = i
-                            aq.Frame.Bar.Highlight.Glass.ImageRectSize = j
-                            aq.Frame.Bar.Highlight.Glass.ImageRectOffset = m
+                            aq.Frame.Bar.Highlight.Glass.Image = m
+                            aq.Frame.Bar.Highlight.Glass.ImageRectSize = p
+                            aq.Frame.Bar.Highlight.Glass.ImageRectOffset = r
 
                             ad(aq.Frame, 0.12, {
-                                Position = UDim2.new(0, g, 0.5, 0),
+                                Position = UDim2.new(0, i, 0.5, 0),
                             }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
                         end)
 
@@ -9285,11 +9294,11 @@ do
                             ab.DisconnectSignal(as)
                         end
 
-                        as = ab.AddSignal(ae.InputEnded, function(b)
+                        as = ab.AddSignal(ae.InputEnded, function(f)
                             if not al.Window.IsToggleDragging then
                                 return
                             end
-                            if b.UserInputType ~= Enum.UserInputType.MouseButton1 and b.UserInputType ~= Enum.UserInputType.Touch then
+                            if f.UserInputType ~= Enum.UserInputType.MouseButton1 and f.UserInputType ~= Enum.UserInputType.Touch then
                                 return
                             end
 
@@ -9308,17 +9317,17 @@ do
 
                             al.WindUI.CurrentInput = nil
 
-                            if aB then
+                            if b then
                                 return
                             end
-                            if not aC then
+                            if not d then
                                 ax:Set(not ax.Value, true, false)
                             else
-                                local d = aq.Frame.Position.X.Offset
-                                local f = d + at / 2
-                                local g = f > au / 2
+                                local g = aq.Frame.Position.X.Offset
+                                local h = g + at / 2
+                                local i = h > au / 2
 
-                                ax:Set(g, true, false)
+                                ax:Set(i, true, false)
                             end
 
                             ad(aq.Frame.Bar.UIScale, 0.23, {Scale = 1}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
@@ -9760,23 +9769,23 @@ do
 
                 local ay = ak.Tab.UIElements.ContainerFrame
 
-                function al.Set(az, aA, aB)
+                function al.Set(az, aA, b)
                     if as then
-                        if not al.IsFocusing and not ai and (not aB or (aB.UserInputType == Enum.UserInputType.MouseButton1 or aB.UserInputType == Enum.UserInputType.Touch)) then
-                            if aB then
-                                am = (aB.UserInputType == Enum.UserInputType.Touch)
+                        if not al.IsFocusing and not ai and (not b or (b.UserInputType == Enum.UserInputType.MouseButton1 or b.UserInputType == Enum.UserInputType.Touch)) then
+                            if b then
+                                am = (b.UserInputType == Enum.UserInputType.Touch)
                                 ay.ScrollingEnabled = false
                                 ai = true
 
-                                local aC = am and aB.Position.X or ac:GetMouseLocation().X
-                                local b = math.clamp((aC - al.UIElements.SliderIcon.AbsolutePosition.X) / al.UIElements.SliderIcon.AbsoluteSize.X, 0, 1)
+                                local d = am and b.Position.X or ac:GetMouseLocation().X
+                                local f = math.clamp((d - al.UIElements.SliderIcon.AbsolutePosition.X) / al.UIElements.SliderIcon.AbsoluteSize.X, 0, 1)
 
-                                aA = CalculateValue(al.Value.Min + b * (al.Value.Max - al.Value.Min))
+                                aA = CalculateValue(al.Value.Min + f * (al.Value.Max - al.Value.Min))
                                 aA = math.clamp(aA, al.Value.Min or 0, al.Value.Max or 100)
 
                                 if aA ~= aq then
                                     ag(al.UIElements.SliderIcon.Frame, 0.05, {
-                                        Size = UDim2.new(b, 0, 1, 0),
+                                        Size = UDim2.new(f, 0, 1, 0),
                                     }):Play()
 
                                     al.UIElements.SliderContainer.TextBox.Text = FormatValue(aA)
@@ -9792,14 +9801,14 @@ do
                                 end
 
                                 an = ae.AddSignal(ad.RenderStepped, function()
-                                    local d = am and aB.Position.X or ac:GetMouseLocation().X
-                                    local f = math.clamp((d - al.UIElements.SliderIcon.AbsolutePosition.X) / al.UIElements.SliderIcon.AbsoluteSize.X, 0, 1)
+                                    local g = am and b.Position.X or ac:GetMouseLocation().X
+                                    local h = math.clamp((g - al.UIElements.SliderIcon.AbsolutePosition.X) / al.UIElements.SliderIcon.AbsoluteSize.X, 0, 1)
 
-                                    aA = CalculateValue(al.Value.Min + f * (al.Value.Max - al.Value.Min))
+                                    aA = CalculateValue(al.Value.Min + h * (al.Value.Max - al.Value.Min))
 
                                     if aA ~= aq then
                                         ag(al.UIElements.SliderIcon.Frame, 0.05, {
-                                            Size = UDim2.new(f, 0, 1, 0),
+                                            Size = UDim2.new(h, 0, 1, 0),
                                         }):Play()
 
                                         al.UIElements.SliderContainer.TextBox.Text = FormatValue(aA)
@@ -9814,8 +9823,8 @@ do
                                         ae.SafeCallback(al.Callback, FormatValue(aA))
                                     end
                                 end)
-                                ao = ae.AddSignal(ac.InputEnded, function(d)
-                                    if (d.UserInputType == Enum.UserInputType.MouseButton1 or d.UserInputType == Enum.UserInputType.Touch) and aB == d then
+                                ao = ae.AddSignal(ac.InputEnded, function(g)
+                                    if (g.UserInputType == Enum.UserInputType.MouseButton1 or g.UserInputType == Enum.UserInputType.Touch) and b == g then
                                         ae.DisconnectSignal(an)
                                         ae.DisconnectSignal(ao)
 
@@ -9837,13 +9846,13 @@ do
                             else
                                 aA = math.clamp(aA, al.Value.Min or 0, al.Value.Max or 100)
 
-                                local aC = math.clamp((aA - (al.Value.Min or 0)) / ((al.Value.Max or 100) - (al.Value.Min or 0)), 0, 1)
+                                local d = math.clamp((aA - (al.Value.Min or 0)) / ((al.Value.Max or 100) - (al.Value.Min or 0)), 0, 1)
 
-                                aA = CalculateValue(al.Value.Min + aC * (al.Value.Max - al.Value.Min))
+                                aA = CalculateValue(al.Value.Min + d * (al.Value.Max - al.Value.Min))
 
                                 if aA ~= aq then
                                     ag(al.UIElements.SliderIcon.Frame, 0.05, {
-                                        Size = UDim2.new(aC, 0, 1, 0),
+                                        Size = UDim2.new(d, 0, 1, 0),
                                     }):Play()
 
                                     al.UIElements.SliderContainer.TextBox.Text = FormatValue(aA)
@@ -9864,30 +9873,30 @@ do
                 function al.SetMax(az, aA)
                     al.Value.Max = aA
 
-                    local aB = tonumber(al.Value.Default) or aq
+                    local b = tonumber(al.Value.Default) or aq
 
-                    if aB > aA then
+                    if b > aA then
                         al:Set(aA)
                     else
-                        local aC = math.clamp((aB - (al.Value.Min or 0)) / (aA - (al.Value.Min or 0)), 0, 1)
+                        local d = math.clamp((b - (al.Value.Min or 0)) / (aA - (al.Value.Min or 0)), 0, 1)
 
                         ag(al.UIElements.SliderIcon.Frame, 0.1, {
-                            Size = UDim2.new(aC, 0, 1, 0),
+                            Size = UDim2.new(d, 0, 1, 0),
                         }):Play()
                     end
                 end
                 function al.SetMin(az, aA)
                     al.Value.Min = aA
 
-                    local aB = tonumber(al.Value.Default) or aq
+                    local b = tonumber(al.Value.Default) or aq
 
-                    if aB < aA then
+                    if b < aA then
                         al:Set(aA)
                     else
-                        local aC = math.clamp((aB - aA) / ((al.Value.Max or 100) - aA), 0, 1)
+                        local d = math.clamp((b - aA) / ((al.Value.Max or 100) - aA), 0, 1)
 
                         ag(al.UIElements.SliderIcon.Frame, 0.1, {
-                            Size = UDim2.new(aC, 0, 1, 0),
+                            Size = UDim2.new(d, 0, 1, 0),
                         }):Play()
                     end
                 end
@@ -10697,17 +10706,17 @@ do
 
                         if typeof(ao.Value) == 'table' then
                             for az, aA in ipairs(ao.Value)do
-                                local aB = typeof(aA) == 'table' and aA.Title or aA
+                                local b = typeof(aA) == 'table' and aA.Title or aA
 
-                                ay[aB] = true
+                                ay[b] = true
                             end
                         end
 
                         for az, aA in ipairs(aw)do
-                            local aB = typeof(aA) == 'table' and aA.Title or aA
+                            local b = typeof(aA) == 'table' and aA.Title or aA
 
-                            if ay[aB] then
-                                ax = ax .. aB .. ', '
+                            if ay[b] then
+                                ax = ax .. b .. ', '
                             end
                         end
 
@@ -10753,8 +10762,8 @@ do
                             local az = ay.Name
                             local aA = false
 
-                            for aB, aC in next, aw do
-                                if az == aC then
+                            for b, d in next, aw do
+                                if az == d then
                                     aA = true
 
                                     break
@@ -10827,11 +10836,11 @@ do
                             au = ai('Search...', 'search', ao.UIElements.Menu, nil, function(
                                 az
                             )
-                                for aA, aB in next, ao.Tabs do
-                                    if string.find(string.lower(aB.Name), string.lower(az), 1, true) then
-                                        aB.UIElements.TabItem.Visible = true
+                                for aA, b in next, ao.Tabs do
+                                    if string.find(string.lower(b.Name), string.lower(az), 1, true) then
+                                        b.UIElements.TabItem.Visible = true
                                     else
-                                        aB.UIElements.TabItem.Visible = false
+                                        b.UIElements.TabItem.Visible = false
                                     end
 
                                     RecalculateListSize()
@@ -10846,9 +10855,9 @@ do
 
                     for az, aA in next, aw do
                         if aA.Type ~= 'Divider' then
-                            local aB = os.clock()
-                            local aC = aj.CreatedCount
-                            local b = {
+                            local b = os.clock()
+                            local d = aj.CreatedCount
+                            local f = {
                                 Name = typeof(aA) == 'table' and aA.Title or aA,
                                 Desc = typeof(aA) == 'table' and aA.Desc or nil,
                                 Icon = typeof(aA) == 'table' and aA.Icon or nil,
@@ -10858,24 +10867,24 @@ do
                                 Locked = typeof(aA) == 'table' and aA.Locked or false,
                                 UIElements = {},
                             }
-                            local d
+                            local g
 
-                            if b.Icon then
-                                d = aj.Image(b.Icon, b.Icon, 0, an.Window.Folder, 'Dropdown', true)
-                                d.Size = UDim2.new(0, b.IconSize or ap.TabIcon, 0, b.IconSize or ap.TabIcon)
-                                d.ImageLabel.ImageTransparency = aq == 'Dropdown' and 0.2 or 0
-                                b.UIElements.TabIcon = d
+                            if f.Icon then
+                                g = aj.Image(f.Icon, f.Icon, 0, an.Window.Folder, 'Dropdown', true)
+                                g.Size = UDim2.new(0, f.IconSize or ap.TabIcon, 0, f.IconSize or ap.TabIcon)
+                                g.ImageLabel.ImageTransparency = aq == 'Dropdown' and 0.2 or 0
+                                f.UIElements.TabIcon = g
                             end
 
-                            b.UIElements.TabItem = aj.NewRoundFrame(ap.MenuCorner - ap.MenuPadding, 'Squircle', {
+                            f.UIElements.TabItem = aj.NewRoundFrame(ap.MenuCorner - ap.MenuPadding, 'Squircle', {
                                 Size = UDim2.new(1, 0, 0, 36),
-                                AutomaticSize = b.Desc and 'Y',
+                                AutomaticSize = f.Desc and 'Y',
                                 ImageTransparency = 1,
                                 Parent = ao.UIElements.Menu.Frame.ScrollingFrame,
                                 ThemeTag = {
                                     ImageColor3 = 'DropdownTabBackground',
                                 },
-                                Active = not b.Locked,
+                                Active = not f.Locked,
                             }, {
                                 aj.NewRoundFrame(ap.MenuCorner - ap.MenuPadding, 'Glass-1.4', {
                                     Size = UDim2.new(1, 0, 1, 0),
@@ -10903,15 +10912,15 @@ do
                                     ak('UICorner', {
                                         CornerRadius = UDim.new(0, ap.MenuCorner - ap.MenuPadding),
                                     }),
-                                    d,
+                                    g,
                                     ak('Frame', {
-                                        Size = UDim2.new(1, d and -ap.TabPadding - ap.TabIcon or 0, 0, 0),
+                                        Size = UDim2.new(1, g and -ap.TabPadding - ap.TabIcon or 0, 0, 0),
                                         BackgroundTransparency = 1,
                                         AutomaticSize = 'Y',
                                         Name = 'Title',
                                     }, {
                                         ak('TextLabel', {
-                                            Text = b.Name,
+                                            Text = f.Name,
                                             TextXAlignment = 'Left',
                                             FontFace = Font.new(aj.Font, Enum.FontWeight.Medium),
                                             ThemeTag = {
@@ -10926,7 +10935,7 @@ do
                                             Size = UDim2.new(1, 0, 0, 0),
                                         }),
                                         ak('TextLabel', {
-                                            Text = b.Desc or '',
+                                            Text = f.Desc or '',
                                             TextXAlignment = 'Left',
                                             FontFace = Font.new(aj.Font, Enum.FontWeight.Regular),
                                             ThemeTag = {
@@ -10940,7 +10949,7 @@ do
                                             AutomaticSize = 'Y',
                                             TextWrapped = true,
                                             Size = UDim2.new(1, 0, 0, 0),
-                                            Visible = b.Desc and true or false,
+                                            Visible = f.Desc and true or false,
                                             Name = 'Desc',
                                         }),
                                         ak('UIListLayout', {
@@ -10951,21 +10960,21 @@ do
                                 }),
                             }, true)
 
-                            if b.Locked then
-                                b.UIElements.TabItem.Frame.Title.TextLabel.TextTransparency = 0.6
+                            if f.Locked then
+                                f.UIElements.TabItem.Frame.Title.TextLabel.TextTransparency = 0.6
 
-                                if b.UIElements.TabIcon then
-                                    b.UIElements.TabIcon.ImageLabel.ImageTransparency = 0.6
+                                if f.UIElements.TabIcon then
+                                    f.UIElements.TabIcon.ImageLabel.ImageTransparency = 0.6
                                 end
                             end
                             if ao.Multi and typeof(ao.Value) == 'string' then
-                                for f, g in next, ao.Values do
-                                    if typeof(g) == 'table' then
-                                        if g.Title == ao.Value then
-                                            ao.Value = {g}
+                                for h, i in next, ao.Values do
+                                    if typeof(i) == 'table' then
+                                        if i.Title == ao.Value then
+                                            ao.Value = {i}
                                         end
                                     else
-                                        if g == ao.Value then
+                                        if i == ao.Value then
                                             ao.Value = {
                                                 ao.Value,
                                             }
@@ -10974,120 +10983,120 @@ do
                                 end
                             end
                             if ao.Multi then
-                                local f = false
+                                local h = false
 
                                 if typeof(ao.Value) == 'table' then
-                                    for g, h in ipairs(ao.Value)do
-                                        local i = typeof(h) == 'table' and h.Title or h
+                                    for i, j in ipairs(ao.Value)do
+                                        local m = typeof(j) == 'table' and j.Title or j
 
-                                        if i == b.Name then
-                                            f = true
+                                        if m == f.Name then
+                                            h = true
 
                                             break
                                         end
                                     end
                                 end
 
-                                b.Selected = f
+                                f.Selected = h
                             else
-                                local f = typeof(ao.Value) == 'table' and ao.Value.Title or ao.Value
+                                local h = typeof(ao.Value) == 'table' and ao.Value.Title or ao.Value
 
-                                b.Selected = f == b.Name
+                                f.Selected = h == f.Name
                             end
-                            if b.Selected and not b.Locked then
-                                b.UIElements.TabItem.ImageTransparency = am
-                                b.UIElements.TabItem.Frame.Title.TextLabel.TextTransparency = 0
+                            if f.Selected and not f.Locked then
+                                f.UIElements.TabItem.ImageTransparency = am
+                                f.UIElements.TabItem.Frame.Title.TextLabel.TextTransparency = 0
 
-                                if b.UIElements.TabIcon then
-                                    b.UIElements.TabIcon.ImageLabel.ImageTransparency = 0
+                                if f.UIElements.TabIcon then
+                                    f.UIElements.TabIcon.ImageLabel.ImageTransparency = 0
                                 end
                             end
 
-                            ao.Tabs[az] = b
+                            ao.Tabs[az] = f
 
                             ar:Display()
 
                             if aq == 'Dropdown' then
-                                aj.AddSignal(b.UIElements.TabItem.MouseButton1Click, function(
+                                aj.AddSignal(f.UIElements.TabItem.MouseButton1Click, function(
                                 )
-                                    if ao.Locked or b.Locked then
+                                    if ao.Locked or f.Locked then
                                         return
                                     end
                                     if ao.Multi then
-                                        if not b.Selected then
-                                            b.Selected = true
+                                        if not f.Selected then
+                                            f.Selected = true
 
-                                            al(b.UIElements.TabItem, 0.1, {ImageTransparency = am}):Play()
-                                            al(b.UIElements.TabItem.Frame.Title.TextLabel, 0.1, {TextTransparency = 0}):Play()
+                                            al(f.UIElements.TabItem, 0.1, {ImageTransparency = am}):Play()
+                                            al(f.UIElements.TabItem.Frame.Title.TextLabel, 0.1, {TextTransparency = 0}):Play()
 
-                                            if b.UIElements.TabIcon then
-                                                al(b.UIElements.TabIcon.ImageLabel, 0.1, {ImageTransparency = 0}):Play()
+                                            if f.UIElements.TabIcon then
+                                                al(f.UIElements.TabIcon.ImageLabel, 0.1, {ImageTransparency = 0}):Play()
                                             end
 
-                                            table.insert(ao.Value, b.Original)
+                                            table.insert(ao.Value, f.Original)
                                         else
                                             if not ao.AllowNone and #ao.Value == 1 then
                                                 return
                                             end
 
-                                            b.Selected = false
+                                            f.Selected = false
 
-                                            al(b.UIElements.TabItem, 0.1, {ImageTransparency = 1}):Play()
-                                            al(b.UIElements.TabItem.Frame.Title.TextLabel, 0.1, {TextTransparency = 0.4}):Play()
+                                            al(f.UIElements.TabItem, 0.1, {ImageTransparency = 1}):Play()
+                                            al(f.UIElements.TabItem.Frame.Title.TextLabel, 0.1, {TextTransparency = 0.4}):Play()
 
-                                            if b.UIElements.TabIcon then
-                                                al(b.UIElements.TabIcon.ImageLabel, 0.1, {ImageTransparency = 0.2}):Play()
+                                            if f.UIElements.TabIcon then
+                                                al(f.UIElements.TabIcon.ImageLabel, 0.1, {ImageTransparency = 0.2}):Play()
                                             end
 
-                                            for f, g in next, ao.Value do
-                                                if typeof(g) == 'table' and (g.Title == b.Name) or (g == b.Name) then
-                                                    table.remove(ao.Value, f)
+                                            for h, i in next, ao.Value do
+                                                if typeof(i) == 'table' and (i.Title == f.Name) or (i == f.Name) then
+                                                    table.remove(ao.Value, h)
 
                                                     break
                                                 end
                                             end
                                         end
                                     else
-                                        for f, g in next, ao.Tabs do
-                                            al(g.UIElements.TabItem, 0.1, {ImageTransparency = 1}):Play()
-                                            al(g.UIElements.TabItem.Frame.Title.TextLabel, 0.1, {TextTransparency = 0.4}):Play()
+                                        for h, i in next, ao.Tabs do
+                                            al(i.UIElements.TabItem, 0.1, {ImageTransparency = 1}):Play()
+                                            al(i.UIElements.TabItem.Frame.Title.TextLabel, 0.1, {TextTransparency = 0.4}):Play()
 
-                                            if g.UIElements.TabIcon then
-                                                al(g.UIElements.TabIcon.ImageLabel, 0.1, {ImageTransparency = 0.2}):Play()
+                                            if i.UIElements.TabIcon then
+                                                al(i.UIElements.TabIcon.ImageLabel, 0.1, {ImageTransparency = 0.2}):Play()
                                             end
 
-                                            g.Selected = false
+                                            i.Selected = false
                                         end
 
-                                        b.Selected = true
+                                        f.Selected = true
 
-                                        al(b.UIElements.TabItem, 0.1, {ImageTransparency = am}):Play()
-                                        al(b.UIElements.TabItem.Frame.Title.TextLabel, 0.1, {TextTransparency = 0}):Play()
+                                        al(f.UIElements.TabItem, 0.1, {ImageTransparency = am}):Play()
+                                        al(f.UIElements.TabItem.Frame.Title.TextLabel, 0.1, {TextTransparency = 0}):Play()
 
-                                        if b.UIElements.TabIcon then
-                                            al(b.UIElements.TabIcon.ImageLabel, 0.1, {ImageTransparency = 0}):Play()
+                                        if f.UIElements.TabIcon then
+                                            al(f.UIElements.TabIcon.ImageLabel, 0.1, {ImageTransparency = 0}):Play()
                                         end
 
-                                        ao.Value = b.Original
+                                        ao.Value = f.Original
                                     end
 
                                     Callback()
                                 end)
                             elseif aq == 'Menu' then
-                                if not b.Locked then
-                                    aj.AddSignal(b.UIElements.TabItem.MouseEnter, function(
+                                if not f.Locked then
+                                    aj.AddSignal(f.UIElements.TabItem.MouseEnter, function(
                                     )
-                                        al(b.UIElements.TabItem, 0.08, {ImageTransparency = am}):Play()
+                                        al(f.UIElements.TabItem, 0.08, {ImageTransparency = am}):Play()
                                     end)
-                                    aj.AddSignal(b.UIElements.TabItem.InputEnded, function(
+                                    aj.AddSignal(f.UIElements.TabItem.InputEnded, function(
                                     )
-                                        al(b.UIElements.TabItem, 0.08, {ImageTransparency = 1}):Play()
+                                        al(f.UIElements.TabItem, 0.08, {ImageTransparency = 1}):Play()
                                     end)
                                 end
 
-                                aj.AddSignal(b.UIElements.TabItem.MouseButton1Click, function(
+                                aj.AddSignal(f.UIElements.TabItem.MouseButton1Click, function(
                                 )
-                                    if ao.Locked or b.Locked then
+                                    if ao.Locked or f.Locked then
                                         return
                                     end
 
@@ -11097,7 +11106,7 @@ do
 
                             RecalculateCanvasSize()
                             RecalculateListSize()
-                            aj.RecordComponent('DropdownItem', aB, aC)
+                            aj.RecordComponent('DropdownItem', b, d)
                         else
                             a.O():New{
                                 Parent = ao.UIElements.Menu.Frame.ScrollingFrame,
@@ -11188,11 +11197,11 @@ do
                         local ax, ay = aw.AbsolutePosition, aw.AbsoluteSize
                         local az = ao.UIElements.Dropdown or ao.DropdownFrame.UIElements.Main
                         local aA = az.AbsolutePosition
-                        local aB = az.AbsoluteSize
-                        local aC = af.X >= aA.X and af.X <= aA.X + aB.X and af.Y >= aA.Y and af.Y <= aA.Y + aB.Y
-                        local b = af.X >= ax.X and af.X <= ax.X + ay.X and af.Y >= ax.Y and af.Y <= ax.Y + ay.Y
+                        local b = az.AbsoluteSize
+                        local d = af.X >= aA.X and af.X <= aA.X + b.X and af.Y >= aA.Y and af.Y <= aA.Y + b.Y
+                        local f = af.X >= ax.X and af.X <= ax.X + ay.X and af.Y >= ax.Y and af.Y <= ax.Y + ay.Y
 
-                        if an.Window.CanDropdown and ao.Opened and not aC and not b then
+                        if an.Window.CanDropdown and ao.Opened and not d and not f then
                             ar:Close()
                         end
                     end
@@ -11793,11 +11802,11 @@ do
                             at.Button.ImageLabel.ImageRectOffset = aA[2].ImageRectPosition
 
                             task.delay(1, function()
-                                local aB = af.Icon'copy'
+                                local b = af.Icon'copy'
 
-                                at.Button.ImageLabel.Image = aB[1]
-                                at.Button.ImageLabel.ImageRectSize = aB[2].ImageRectSize
-                                at.Button.ImageLabel.ImageRectOffset = aB[2].ImageRectPosition
+                                at.Button.ImageLabel.Image = b[1]
+                                at.Button.ImageLabel.ImageRectSize = b[2].ImageRectSize
+                                at.Button.ImageLabel.ImageRectOffset = b[2].ImageRectPosition
                             end)
                         end
                     end)
@@ -11955,25 +11964,25 @@ do
                     TextPadding = 10,
                 }
                 local aA = {}
-                local aB = az.Transparency ~= nil
+                local b = az.Transparency ~= nil
 
-                function az.SetHSVFromRGB(aC, b)
-                    local d, f, g = Color3.toHSV(b)
+                function az.SetHSVFromRGB(d, f)
+                    local g, h, i = Color3.toHSV(f)
 
-                    az.Hue = d
-                    az.Sat = f
-                    az.Vib = g
+                    az.Hue = g
+                    az.Sat = h
+                    az.Vib = i
                 end
 
                 az:SetHSVFromRGB(az.Default)
 
-                local aC = a.q()
-                local b = aC.Create(nil, 'Dialog', aw, ax, aw.UIElements.Main.Main)
+                local d = a.q()
+                local f = d.Create(nil, 'Dialog', aw, ax, aw.UIElements.Main.Main)
 
-                az.ColorpickerFrame = b
-                b.UIElements.Main.Size = UDim2.new(1, 0, 0, 0)
+                az.ColorpickerFrame = f
+                f.UIElements.Main.Size = UDim2.new(1, 0, 0, 0)
 
-                local d, f, g = az.Hue, az.Sat, az.Vib
+                local g, h, i = az.Hue, az.Sat, az.Vib
 
                 az.UIElements.Title = af('TextLabel', {
                     Text = az.Title,
@@ -11986,7 +11995,7 @@ do
                         TextColor3 = 'Text',
                     },
                     BackgroundTransparency = 1,
-                    Parent = b.UIElements.Main,
+                    Parent = f.UIElements.Main,
                 }, {
                     af('UIPadding', {
                         PaddingTop = UDim.new(0, az.TextPadding / 2),
@@ -11996,16 +12005,16 @@ do
                     }),
                 })
 
-                local h = af('Frame', {
+                local j = af('Frame', {
                     Size = UDim2.new(1, 0, 1, 0),
                     Position = UDim2.new(0, 0, 0, 0),
                     BackgroundTransparency = 1,
                 })
-                local i = af('Frame', {
+                local m = af('Frame', {
                     Size = UDim2.new(0, 14, 0, 14),
                     AnchorPoint = Vector2.new(0.5, 0.5),
                     Position = UDim2.new(0.5, 0, 0, 0),
-                    Parent = h,
+                    Parent = j,
                     BackgroundColor3 = az.Default,
                 }, {
                     af('UIStroke', {
@@ -12024,9 +12033,9 @@ do
                     Size = UDim2.fromOffset(160, 158),
                     Position = UDim2.fromOffset(0, 40 + az.TextPadding),
                     Image = 'rbxassetid://4155801252',
-                    BackgroundColor3 = Color3.fromHSV(d, 1, 1),
+                    BackgroundColor3 = Color3.fromHSV(g, 1, 1),
                     BackgroundTransparency = 0,
-                    Parent = b.UIElements.Main,
+                    Parent = f.UIElements.Main,
                 }, {
                     af('UICorner', {
                         CornerRadius = UDim.new(0, 8),
@@ -12053,14 +12062,14 @@ do
                             },
                         }),
                     }),
-                    i,
+                    m,
                 })
                 az.UIElements.Inputs = af('Frame', {
                     AutomaticSize = 'XY',
                     Size = UDim2.new(0, 0, 0, 0),
-                    Position = UDim2.fromOffset(aB and 240 or 210, 40 + az.TextPadding),
+                    Position = UDim2.fromOffset(b and 240 or 210, 40 + az.TextPadding),
                     BackgroundTransparency = 1,
-                    Parent = b.UIElements.Main,
+                    Parent = f.UIElements.Main,
                 }, {
                     af('UIListLayout', {
                         Padding = UDim.new(0, 4),
@@ -12068,7 +12077,7 @@ do
                     }),
                 })
 
-                local j = af('Frame', {
+                local p = af('Frame', {
                     BackgroundColor3 = az.Default,
                     Size = UDim2.fromScale(1, 1),
                     BackgroundTransparency = az.Transparency,
@@ -12086,7 +12095,7 @@ do
                     BackgroundTransparency = 1,
                     Position = UDim2.fromOffset(85, 208 + az.TextPadding),
                     Size = UDim2.fromOffset(75, 24),
-                    Parent = b.UIElements.Main,
+                    Parent = f.UIElements.Main,
                 }, {
                     af('UICorner', {
                         CornerRadius = UDim.new(0, 8),
@@ -12113,10 +12122,10 @@ do
                             },
                         }),
                     }),
-                    j,
+                    p,
                 })
 
-                local m = af('Frame', {
+                local r = af('Frame', {
                     BackgroundColor3 = az.Default,
                     Size = UDim2.fromScale(1, 1),
                     BackgroundTransparency = 0,
@@ -12135,7 +12144,7 @@ do
                     BackgroundTransparency = 1,
                     Position = UDim2.fromOffset(0, 208 + az.TextPadding),
                     Size = UDim2.fromOffset(75, 24),
-                    Parent = b.UIElements.Main,
+                    Parent = f.UIElements.Main,
                 }, {
                     af('UICorner', {
                         CornerRadius = UDim.new(0, 8),
@@ -12162,24 +12171,24 @@ do
                             },
                         }),
                     }),
-                    m,
+                    r,
                 })
 
-                local p = {}
+                local u = {}
 
-                for r = 0, 1, 0.1 do
-                    table.insert(p, ColorSequenceKeypoint.new(r, Color3.fromHSV(r, 1, 1)))
+                for v = 0, 1, 0.1 do
+                    table.insert(u, ColorSequenceKeypoint.new(v, Color3.fromHSV(v, 1, 1)))
                 end
 
-                local r = af('UIGradient', {
-                    Color = ColorSequence.new(p),
+                local v = af('UIGradient', {
+                    Color = ColorSequence.new(u),
                     Rotation = 90,
                 })
-                local u = af('Frame', {
+                local x = af('Frame', {
                     Size = UDim2.new(0, 14, 0, 14),
                     AnchorPoint = Vector2.new(0.5, 0.5),
                     Position = UDim2.new(0.5, 0, 0, 0),
-                    Parent = h,
+                    Parent = j,
                     BackgroundColor3 = az.Default,
                 }, {
                     af('UIStroke', {
@@ -12193,20 +12202,20 @@ do
                         CornerRadius = UDim.new(1, 0),
                     }),
                 })
-                local v = af('Frame', {
+                local z = af('Frame', {
                     Size = UDim2.fromOffset(6, 192),
                     Position = UDim2.fromOffset(180, 40 + az.TextPadding),
-                    Parent = b.UIElements.Main,
+                    Parent = f.UIElements.Main,
                 }, {
                     af('UICorner', {
                         CornerRadius = UDim.new(1, 0),
                     }),
-                    r,
-                    h,
+                    v,
+                    j,
                 })
 
-                local function CreateNewInput(x, z)
-                    local A = ar(x, nil, az.UIElements.Inputs, nil, nil, nil, nil, nil, true)
+                local function CreateNewInput(A, B)
+                    local C = ar(A, nil, az.UIElements.Inputs, nil, nil, nil, nil, nil, true)
 
                     af('TextLabel', {
                         BackgroundTransparency = 1,
@@ -12219,35 +12228,35 @@ do
                         },
                         AnchorPoint = Vector2.new(1, 0.5),
                         Position = UDim2.new(1, -12, 0.5, 0),
-                        Parent = A.Frame,
-                        Text = x,
+                        Parent = C.Frame,
+                        Text = A,
                     })
                     af('UIScale', {
-                        Parent = A,
+                        Parent = C,
                         Scale = 0.85,
                     })
 
-                    A.Frame.Frame.TextBox.Text = z
-                    A.Size = UDim2.new(0, 150, 0, 42)
+                    C.Frame.Frame.TextBox.Text = B
+                    C.Size = UDim2.new(0, 150, 0, 42)
 
-                    return A
+                    return C
                 end
-                local function ToRGB(x)
+                local function ToRGB(A)
                     return {
-                        R = math.floor(x.R * 255),
-                        G = math.floor(x.G * 255),
-                        B = math.floor(x.B * 255),
+                        R = math.floor(A.R * 255),
+                        G = math.floor(A.G * 255),
+                        B = math.floor(A.B * 255),
                     }
                 end
 
-                local x = CreateNewInput('Hex', '#' .. az.Default:ToHex())
-                local z = CreateNewInput('Red', ToRGB(az.Default).R)
-                local A = CreateNewInput('Green', ToRGB(az.Default).G)
-                local B = CreateNewInput('Blue', ToRGB(az.Default).B)
-                local F
+                local A = CreateNewInput('Hex', '#' .. az.Default:ToHex())
+                local B = CreateNewInput('Red', ToRGB(az.Default).R)
+                local C = CreateNewInput('Green', ToRGB(az.Default).G)
+                local F = CreateNewInput('Blue', ToRGB(az.Default).B)
+                local G
 
-                if aB then
-                    F = CreateNewInput('Alpha', ((1 - az.Transparency) * 100) .. '%')
+                if b then
+                    G = CreateNewInput('Alpha', ((1 - az.Transparency) * 100) .. '%')
                 end
 
                 local H = af('Frame', {
@@ -12255,7 +12264,7 @@ do
                     AutomaticSize = 'Y',
                     Position = UDim2.new(0, 0, 0, 254 + az.TextPadding),
                     BackgroundTransparency = 1,
-                    Parent = b.UIElements.Main,
+                    Parent = f.UIElements.Main,
                     LayoutOrder = 4,
                 }, {
                     af('UIListLayout', {
@@ -12265,10 +12274,10 @@ do
                     }),
                 })
 
-                aa.AddSignal(b.UIElements.Main:GetPropertyChangedSignal'AbsoluteSize', function(
+                aa.AddSignal(f.UIElements.Main:GetPropertyChangedSignal'AbsoluteSize', function(
                 )
-                    az.UIElements.Title.Size = UDim2.new(0, b.UIElements.Main.AbsoluteSize.X / av.UIScale - (b.UIPadding * 2), 0, 0)
-                    H.Size = UDim2.new(0, b.UIElements.Main.AbsoluteSize.X / av.UIScale - b.UIPadding * 2, 0, 40)
+                    az.UIElements.Title.Size = UDim2.new(0, f.UIElements.Main.AbsoluteSize.X / av.UIScale - (f.UIPadding * 2), 0, 0)
+                    H.Size = UDim2.new(0, f.UIElements.Main.AbsoluteSize.X / av.UIScale - f.UIPadding * 2, 0, 40)
                 end)
 
                 local J = {
@@ -12303,7 +12312,7 @@ do
                 }
 
                 for L, M in next, J do
-                    local N = aq(M.Title, M.Icon, M.Callback, M.Variant, H, b, true)
+                    local N = aq(M.Title, M.Icon, M.Callback, M.Variant, H, f, true)
 
                     N.Size = UDim2.new(0.5, -3, 0, 40)
                     N.AutomaticSize = 'None'
@@ -12311,7 +12320,7 @@ do
 
                 local L, M, N
 
-                if aB then
+                if b then
                     local O = af('Frame', {
                         Size = UDim2.new(1, 0, 1, 0),
                         Position = UDim2.fromOffset(0, 0),
@@ -12355,7 +12364,7 @@ do
                     L = af('Frame', {
                         Size = UDim2.fromOffset(6, 192),
                         Position = UDim2.fromOffset(210, 40 + az.TextPadding),
-                        Parent = b.UIElements.Main,
+                        Parent = f.UIElements.Main,
                         BackgroundTransparency = 1,
                     }, {
                         af('UICorner', {
@@ -12389,29 +12398,29 @@ do
                 end
                 function az.Update(O, P, Q)
                     if P then
-                        d, f, g = Color3.toHSV(P)
+                        g, h, i = Color3.toHSV(P)
                     else
-                        d, f, g = az.Hue, az.Sat, az.Vib
+                        g, h, i = az.Hue, az.Sat, az.Vib
                     end
 
-                    az.UIElements.SatVibMap.BackgroundColor3 = Color3.fromHSV(d, 1, 1)
-                    i.Position = UDim2.new(f, 0, 1 - g, 0)
-                    i.BackgroundColor3 = Color3.fromHSV(d, f, g)
-                    m.BackgroundColor3 = Color3.fromHSV(d, f, g)
-                    u.BackgroundColor3 = Color3.fromHSV(d, 1, 1)
-                    u.Position = UDim2.new(0.5, 0, d, 0)
-                    x.Frame.Frame.TextBox.Text = '#' .. Color3.fromHSV(d, f, g):ToHex()
-                    z.Frame.Frame.TextBox.Text = ToRGB(Color3.fromHSV(d, f, g)).R
-                    A.Frame.Frame.TextBox.Text = ToRGB(Color3.fromHSV(d, f, g)).G
-                    B.Frame.Frame.TextBox.Text = ToRGB(Color3.fromHSV(d, f, g)).B
+                    az.UIElements.SatVibMap.BackgroundColor3 = Color3.fromHSV(g, 1, 1)
+                    m.Position = UDim2.new(h, 0, 1 - i, 0)
+                    m.BackgroundColor3 = Color3.fromHSV(g, h, i)
+                    r.BackgroundColor3 = Color3.fromHSV(g, h, i)
+                    x.BackgroundColor3 = Color3.fromHSV(g, 1, 1)
+                    x.Position = UDim2.new(0.5, 0, g, 0)
+                    A.Frame.Frame.TextBox.Text = '#' .. Color3.fromHSV(g, h, i):ToHex()
+                    B.Frame.Frame.TextBox.Text = ToRGB(Color3.fromHSV(g, h, i)).R
+                    C.Frame.Frame.TextBox.Text = ToRGB(Color3.fromHSV(g, h, i)).G
+                    F.Frame.Frame.TextBox.Text = ToRGB(Color3.fromHSV(g, h, i)).B
 
-                    if Q or aB then
-                        m.BackgroundTransparency = az.Transparency or Q
-                        N.BackgroundColor3 = Color3.fromHSV(d, f, g)
-                        M.BackgroundColor3 = Color3.fromHSV(d, f, g)
+                    if Q or b then
+                        r.BackgroundTransparency = az.Transparency or Q
+                        N.BackgroundColor3 = Color3.fromHSV(g, h, i)
+                        M.BackgroundColor3 = Color3.fromHSV(g, h, i)
                         M.BackgroundTransparency = az.Transparency or Q
                         M.Position = UDim2.new(0.5, 0, 1 - az.Transparency or Q, 0)
-                        F.Frame.Frame.TextBox.Text = az:Round((1 - az.Transparency or Q) * 100, 0) .. '%'
+                        G.Frame.Frame.TextBox.Text = az:Round((1 - az.Transparency or Q) * 100, 0) .. '%'
                     end
                 end
 
@@ -12430,11 +12439,11 @@ do
                     return math.clamp(tonumber(O) or 0, P, Q)
                 end
 
-                table.insert(aA, aa.AddSignal(x.Frame.Frame.TextBox.FocusLost, function(
+                table.insert(aA, aa.AddSignal(A.Frame.Frame.TextBox.FocusLost, function(
                     O
                 )
                     if O then
-                        local P = x.Frame.Frame.TextBox.Text:gsub('#', '')
+                        local P = A.Frame.Frame.TextBox.Text:gsub('#', '')
                         local Q, R = pcall(Color3.fromHex, P)
 
                         if Q and typeof(R) == 'Color3' then
@@ -12466,14 +12475,14 @@ do
                     end)
                 end
 
-                updateColorFromInput(z, 'R')
-                updateColorFromInput(A, 'G')
-                updateColorFromInput(B, 'B')
+                updateColorFromInput(B, 'R')
+                updateColorFromInput(C, 'G')
+                updateColorFromInput(F, 'B')
 
-                if aB then
-                    aa.AddSignal(F.Frame.Frame.TextBox.FocusLost, function(O)
+                if b then
+                    aa.AddSignal(G.Frame.Frame.TextBox.FocusLost, function(O)
                         if O then
-                            local P = F.Frame.Frame.TextBox
+                            local P = G.Frame.Frame.TextBox
                             local Q = clamp(P.Text, 0, 100)
 
                             P.Text = tostring(Q)
@@ -12525,7 +12534,7 @@ do
                     if at == 'SatVib' then
                         UpdateSatVib(az.UIElements.SatVibMap, az)
                     elseif at == 'Hue' then
-                        UpdateHue(v, az)
+                        UpdateHue(z, az)
                     elseif at == 'Transparency' then
                         UpdateTransparency(L, az)
                     end
@@ -12550,7 +12559,7 @@ do
 
                     UpdateSatVib(az.UIElements.SatVibMap, az)
                 end))
-                table.insert(aA, aa.AddSignal(v.InputBegan, function(P)
+                table.insert(aA, aa.AddSignal(z.InputBegan, function(P)
                     if P.UserInputType ~= Enum.UserInputType.MouseButton1 and P.UserInputType ~= Enum.UserInputType.Touch then
                         return
                     end
@@ -12566,7 +12575,7 @@ do
 
                     at = 'Hue'
 
-                    UpdateHue(v, az)
+                    UpdateHue(z, az)
                 end))
 
                 if L then
@@ -13195,14 +13204,14 @@ do
                     local ay = math.floor(ax / au)
                     local az = ax - (ay * au)
 
-                    for aA, aB in next, as do
-                        local aC = ay
+                    for aA, b in next, as do
+                        local d = ay
 
                         if aA <= math.abs(az) then
-                            aC = aC - 1
+                            d = d - 1
                         end
-                        if aB.ElementFrame then
-                            aB.ElementFrame.Size = UDim2.new(av, aC, 1, 0)
+                        if b.ElementFrame then
+                            b.ElementFrame.Size = UDim2.new(av, d, 1, 0)
                         end
                     end
                 end, ao, al.UIScale, al.Tab)
@@ -13286,14 +13295,14 @@ do
                     local ay = math.floor(ax / au)
                     local az = ax - (ay * au)
 
-                    for aA, aB in next, as do
-                        local aC = ay
+                    for aA, b in next, as do
+                        local d = ay
 
                         if aA <= math.abs(az) then
-                            aC = aC - 1
+                            d = d - 1
                         end
-                        if aB.ElementFrame then
-                            aB.ElementFrame.Size = UDim2.new(av, aC, 1, 0)
+                        if b.ElementFrame then
+                            b.ElementFrame.Size = UDim2.new(av, d, 1, 0)
                         end
                     end
                 end, ao, al.UIScale, al.Tab)
@@ -13492,10 +13501,10 @@ do
 
                             local aA = CFrame.fromAxisAngle(ay.CFrame.RightVector, 
 -aw.Y * 0.02)
-                            local aB = CFrame.new(ax) * aA * CFrame.new(-ax) * ay.CFrame
+                            local b = CFrame.new(ax) * aA * CFrame.new(-ax) * ay.CFrame
 
-                            if aB.UpVector.Y > 0.1 then
-                                ay.CFrame = aB
+                            if b.UpVector.Y > 0.1 then
+                                ay.CFrame = b
                             end
                         end
                     end
@@ -13652,14 +13661,14 @@ do
 
                                         if aA.Parser[az.__type] then
                                             task.defer(function()
-                                                local aB, aC = pcall(function()
+                                                local b, d = pcall(function()
                                                     aA.Parser[az.__type].Load(ay, az)
                                                 end)
 
-                                                if aB then
+                                                if b then
                                                     al.PendingConfigData[au.Flag] = nil
                                                 else
-                                                    warn("[ WindUI ] Failed to apply pending config for '" .. au.Flag .. "': " .. tostring(aC))
+                                                    warn("[ WindUI ] Failed to apply pending config for '" .. au.Flag .. "': " .. tostring(d))
                                                 end
                                             end)
                                         end
@@ -13672,9 +13681,9 @@ do
 
                             local az
 
-                            for aA, aB in next, ay do
-                                if typeof(aB) == 'table' and aA ~= 'ElementFrame' and aA:match'Frame$' then
-                                    az = aB
+                            for aA, b in next, ay do
+                                if typeof(b) == 'table' and aA ~= 'ElementFrame' and aA:match'Frame$' then
+                                    az = b
 
                                     break
                                 end
@@ -13683,17 +13692,17 @@ do
                             if az then
                                 ay.ElementFrame = az.UIElements.Main
 
-                                function ay.SetTitle(aA, aB)
-                                    return az.SetTitle and az:SetTitle(aB)
+                                function ay.SetTitle(aA, b)
+                                    return az.SetTitle and az:SetTitle(b)
                                 end
-                                function ay.SetDesc(aA, aB)
-                                    return az.SetDesc and az:SetDesc(aB)
+                                function ay.SetDesc(aA, b)
+                                    return az.SetDesc and az:SetDesc(b)
                                 end
-                                function ay.SetImage(aA, aB, aC)
-                                    return az.SetImage and az:SetImage(aB, aC)
+                                function ay.SetImage(aA, b, d)
+                                    return az.SetImage and az:SetImage(b, d)
                                 end
-                                function ay.SetThumbnail(aA, aB, aC)
-                                    return az.SetThumbnail and az:SetThumbnail(aB, aC)
+                                function ay.SetThumbnail(aA, b, d)
+                                    return az.SetThumbnail and az:SetThumbnail(b, d)
                                 end
                                 function ay.Highlight(aA)
                                     az:Highlight()
@@ -14117,17 +14126,17 @@ do
                     end
                 end)
 
-                function ar.ScrollToTheElement(aA, aB)
+                function ar.ScrollToTheElement(aA, b)
                     ar.UIElements.ContainerFrame.ScrollingEnabled = false
 
                     ak.Tween(ar.UIElements.ContainerFrame, 0.45, {
-                        CanvasPosition = Vector2.new(0, ar.Elements[aB].ElementFrame.AbsolutePosition.Y - ar.UIElements.ContainerFrame.AbsolutePosition.Y - ar.UIElements.ContainerFrame.UIPadding.PaddingTop.Offset),
+                        CanvasPosition = Vector2.new(0, ar.Elements[b].ElementFrame.AbsolutePosition.Y - ar.UIElements.ContainerFrame.AbsolutePosition.Y - ar.UIElements.ContainerFrame.UIPadding.PaddingTop.Offset),
                     }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
                     task.spawn(function()
                         task.wait(0.48)
 
-                        if ar.Elements[aB].Highlight then
-                            ar.Elements[aB]:Highlight()
+                        if ar.Elements[b].Highlight then
+                            ar.Elements[b]:Highlight()
                         end
 
                         ar.UIElements.ContainerFrame.ScrollingEnabled = true
@@ -14140,55 +14149,55 @@ do
 
                 aA.Load(ar, ar.UIElements.ContainerFrame, aA.Elements, Window, WindUI, nil, aA, aq, ar)
 
-                function ar.LockAll(aB)
-                    for aC, b in next, Window.AllElements do
-                        if b.Tab and b.Tab.Index and b.Tab.Index == ar.Index and b.Lock then
-                            b:Lock()
+                function ar.LockAll(b)
+                    for d, f in next, Window.AllElements do
+                        if f.Tab and f.Tab.Index and f.Tab.Index == ar.Index and f.Lock then
+                            f:Lock()
                         end
                     end
                 end
-                function ar.UnlockAll(aB)
-                    for aC, b in next, Window.AllElements do
-                        if b.Tab and b.Tab.Index and b.Tab.Index == ar.Index and b.Unlock then
-                            b:Unlock()
+                function ar.UnlockAll(b)
+                    for d, f in next, Window.AllElements do
+                        if f.Tab and f.Tab.Index and f.Tab.Index == ar.Index and f.Unlock then
+                            f:Unlock()
                         end
                     end
                 end
-                function ar.GetLocked(aB)
-                    local aC = {}
+                function ar.GetLocked(b)
+                    local d = {}
 
-                    for b, d in next, Window.AllElements do
-                        if d.Tab and d.Tab.Index and d.Tab.Index == ar.Index and d.Locked == true then
-                            table.insert(aC, d)
+                    for f, g in next, Window.AllElements do
+                        if g.Tab and g.Tab.Index and g.Tab.Index == ar.Index and g.Locked == true then
+                            table.insert(d, g)
                         end
                     end
 
-                    return aC
+                    return d
                 end
-                function ar.GetUnlocked(aB)
-                    local aC = {}
+                function ar.GetUnlocked(b)
+                    local d = {}
 
-                    for b, d in next, Window.AllElements do
-                        if d.Tab and d.Tab.Index and d.Tab.Index == ar.Index and d.Locked == false then
-                            table.insert(aC, d)
+                    for f, g in next, Window.AllElements do
+                        if g.Tab and g.Tab.Index and g.Tab.Index == ar.Index and g.Locked == false then
+                            table.insert(d, g)
                         end
                     end
 
-                    return aC
+                    return d
                 end
-                function ar.Select(aB)
+                function ar.Select(b)
                     return ao:SelectTab(ar.Index)
                 end
 
                 task.spawn(function()
-                    local aB
+                    local b
 
                     if ar.CustomEmptyPage.Icon then
-                        aB = ak.Image(ar.CustomEmptyPage.Icon, ar.CustomEmptyPage.Icon, 0, 'Temp', 'EmptyPage', true)
-                        aB.Size = UDim2.fromOffset(ar.CustomEmptyPage.IconSize or 48, ar.CustomEmptyPage.IconSize or 48)
+                        b = ak.Image(ar.CustomEmptyPage.Icon, ar.CustomEmptyPage.Icon, 0, 'Temp', 'EmptyPage', true)
+                        b.Size = UDim2.fromOffset(ar.CustomEmptyPage.IconSize or 48, ar.CustomEmptyPage.IconSize or 48)
                     end
 
-                    local aC = al('Frame', {
+                    local d = al('Frame', {
                         BackgroundTransparency = 1,
                         Size = UDim2.new(1, 0, 1, -Window.UIElements.Main.Main.Topbar.AbsoluteSize.Y),
                         Parent = ar.UIElements.ContainerFrame,
@@ -14200,7 +14209,7 @@ do
                             HorizontalAlignment = 'Center',
                             FillDirection = 'Vertical',
                         }),
-                        aB,
+                        b,
                         ar.CustomEmptyPage.Title and al('TextLabel', {
                             AutomaticSize = 'XY',
                             Text = ar.CustomEmptyPage.Title,
@@ -14224,13 +14233,13 @@ do
                             FontFace = Font.new(ak.Font, Enum.FontWeight.Regular),
                         }) or nil,
                     })
-                    local b
+                    local f
 
-                    b = ak.AddSignal(ar.UIElements.ContainerFrame.ChildAdded, function(
+                    f = ak.AddSignal(ar.UIElements.ContainerFrame.ChildAdded, function(
                     )
-                        aC.Visible = false
+                        d.Visible = false
 
-                        b:Disconnect()
+                        f:Disconnect()
                     end)
                 end)
 
@@ -14699,7 +14708,7 @@ do
                 })
 
                 local function CreateSearchTab(av, aw, ax, ay, az, aA)
-                    local aB = ak('TextButton', {
+                    local b = ak('TextButton', {
                         Size = UDim2.new(1, 0, 0, 0),
                         AutomaticSize = 'Y',
                         BackgroundTransparency = 1,
@@ -14820,21 +14829,21 @@ do
                         }),
                     })
 
-                    aB.Main.Size = UDim2.new(1, 0, 0, aB.Main.Outline.Frame.Desc.Visible and (((ap.Padding - 2) * 2) + aB.Main.Outline.Frame.Title.TextBounds.Y + 6 + aB.Main.Outline.Frame.Desc.TextBounds.Y) or (((ap.Padding - 2) * 2) + aB.Main.Outline.Frame.Title.TextBounds.Y))
+                    b.Main.Size = UDim2.new(1, 0, 0, b.Main.Outline.Frame.Desc.Visible and (((ap.Padding - 2) * 2) + b.Main.Outline.Frame.Title.TextBounds.Y + 6 + b.Main.Outline.Frame.Desc.TextBounds.Y) or (((ap.Padding - 2) * 2) + b.Main.Outline.Frame.Title.TextBounds.Y))
 
-                    ai.AddSignal(aB.Main.MouseEnter, function()
-                        al(aB.Main, 0.04, {ImageTransparency = 0.95}):Play()
+                    ai.AddSignal(b.Main.MouseEnter, function()
+                        al(b.Main, 0.04, {ImageTransparency = 0.95}):Play()
                     end)
-                    ai.AddSignal(aB.Main.InputEnded, function()
-                        al(aB.Main, 0.08, {ImageTransparency = 1}):Play()
+                    ai.AddSignal(b.Main.InputEnded, function()
+                        al(b.Main, 0.08, {ImageTransparency = 1}):Play()
                     end)
-                    ai.AddSignal(aB.Main.MouseButton1Click, function()
+                    ai.AddSignal(b.Main.MouseButton1Click, function()
                         if aA then
                             aA()
                         end
                     end)
 
-                    return aB
+                    return b
                 end
                 local function ContainsText(av, aw)
                     if not aw or aw == '' then
@@ -14860,18 +14869,18 @@ do
                         local az = ContainsText(ay.Title or '', av)
                         local aA = {}
 
-                        for aB, aC in next, ay.Elements do
-                            if aC.__type ~= 'Section' then
-                                local b = ContainsText(aC.Title or '', av)
-                                local d = ContainsText(aC.Desc or '', av)
+                        for b, d in next, ay.Elements do
+                            if d.__type ~= 'Section' then
+                                local f = ContainsText(d.Title or '', av)
+                                local g = ContainsText(d.Desc or '', av)
 
-                                if b or d then
-                                    aA[aB] = {
-                                        Title = aC.Title,
-                                        Desc = aC.Desc,
-                                        Original = aC,
-                                        __type = aC.__type,
-                                        Index = aB,
+                                if f or g then
+                                    aA[b] = {
+                                        Title = d.Title,
+                                        Desc = d.Desc,
+                                        Original = d,
+                                        __type = d.__type,
+                                        Index = b,
                                     }
                                 end
                             end
@@ -14944,23 +14953,23 @@ do
                     if ax and next(ax) ~= nil then
                         for ay, az in next, ax do
                             local aA = ap.Icons.Tab
-                            local aB = CreateSearchTab(az.Title, nil, aA, as, true, function(
+                            local b = CreateSearchTab(az.Title, nil, aA, as, true, function(
                             )
                                 ap:Close()
                                 am:SelectTab(ay)
                             end)
 
                             if az.Elements and next(az.Elements) ~= nil then
-                                for aC, b in next, az.Elements do
-                                    local d = ap.Icons[b.__type]
+                                for d, f in next, az.Elements do
+                                    local g = ap.Icons[f.__type]
 
-                                    CreateSearchTab(b.Title, b.Desc, d, aB:FindFirstChild'ParentContainer' and aB.ParentContainer.Frame or nil, false, function(
+                                    CreateSearchTab(f.Title, f.Desc, g, b:FindFirstChild'ParentContainer' and b.ParentContainer.Frame or nil, false, function(
                                     )
                                         ap:Close()
                                         am:SelectTab(ay)
 
                                         if az.Tab.ScrollToTheElement then
-                                            az.Tab:ScrollToTheElement(b.Index)
+                                            az.Tab:ScrollToTheElement(f.Index)
                                         end
                                     end)
                                 end
@@ -15175,7 +15184,7 @@ do
                         ImageTransparency = 1,
                     }),
                 })
-                local aB = an.NewRoundFrame(aw.UICorner, 'Squircle', {
+                local b = an.NewRoundFrame(aw.UICorner, 'Squircle', {
                     Size = UDim2.new(1, 0, 1, 0),
                     ImageTransparency = 1,
                     ImageColor3 = Color3.new(0, 0, 0),
@@ -15263,7 +15272,7 @@ do
                     }),
                 })
 
-                local aC = ao('ImageLabel', {
+                local d = ao('ImageLabel', {
                     Image = 'rbxassetid://8992230677',
                     ThemeTag = {
                         ImageColor3 = 'WindowShadow',
@@ -15286,16 +15295,16 @@ do
                     aw.IsPC = nil
                 end
 
-                local b
+                local f
 
                 if aw.User then
                     local function GetUserThumb()
-                        local d = ak:GetUserThumbnailAsync(aw.User.Anonymous and 1 or ak.LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+                        local g = ak:GetUserThumbnailAsync(aw.User.Anonymous and 1 or ak.LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
 
-                        return d
+                        return g
                     end
 
-                    b = ao('TextButton', {
+                    f = ao('TextButton', {
                         Size = UDim2.new(0, aw.UIElements.SideBarContainer.AbsoluteSize.X - (aw.UIPadding / 2), 0, 42 + aw.UIPadding),
                         Position = UDim2.new(0, aw.UIPadding / 2, 1, -(aw.UIPadding / 2)),
                         AnchorPoint = Vector2.new(0, 1),
@@ -15395,33 +15404,33 @@ do
                         }),
                     })
 
-                    function aw.User.Enable(d)
+                    function aw.User.Enable(g)
                         aw.User.Enabled = true
 
                         ap(aw.UIElements.SideBarContainer, 0.25, {
                             Size = UDim2.new(0, aw.SideBarWidth, 1, -aw.Topbar.Height - 42 - (aw.UIPadding * 2)),
                         }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
 
-                        b.Visible = true
+                        f.Visible = true
                     end
-                    function aw.User.Disable(d)
+                    function aw.User.Disable(g)
                         aw.User.Enabled = false
 
                         ap(aw.UIElements.SideBarContainer, 0.25, {
                             Size = UDim2.new(0, aw.SideBarWidth, 1, -aw.Topbar.Height),
                         }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
 
-                        b.Visible = false
+                        f.Visible = false
                     end
-                    function aw.User.SetAnonymous(d, f)
-                        if f ~= false then
-                            f = true
+                    function aw.User.SetAnonymous(g, h)
+                        if h ~= false then
+                            h = true
                         end
 
-                        aw.User.Anonymous = f
-                        b.UserIcon.ImageLabel.Image = GetUserThumb()
-                        b.UserIcon.Frame.DisplayName.Text = f and 'Anonymous' or ak.LocalPlayer.DisplayName
-                        b.UserIcon.Frame.UserName.Text = f and 'anonymous' or ak.LocalPlayer.Name
+                        aw.User.Anonymous = h
+                        f.UserIcon.ImageLabel.Image = GetUserThumb()
+                        f.UserIcon.Frame.DisplayName.Text = h and 'Anonymous' or ak.LocalPlayer.DisplayName
+                        f.UserIcon.Frame.UserName.Text = h and 'anonymous' or ak.LocalPlayer.Name
                     end
 
                     if aw.User.Enabled then
@@ -15430,89 +15439,89 @@ do
                         aw.User:Disable()
                     end
                     if aw.User.Callback then
-                        an.AddSignal(b.MouseButton1Click, function()
+                        an.AddSignal(f.MouseButton1Click, function()
                             aw.User.Callback()
                         end)
-                        an.AddSignal(b.MouseEnter, function()
-                            ap(b.UserIcon, 0.04, {ImageTransparency = 0.95}):Play()
-                            ap(b.Outline, 0.04, {ImageTransparency = 0.85}):Play()
+                        an.AddSignal(f.MouseEnter, function()
+                            ap(f.UserIcon, 0.04, {ImageTransparency = 0.95}):Play()
+                            ap(f.Outline, 0.04, {ImageTransparency = 0.85}):Play()
                         end)
-                        an.AddSignal(b.InputEnded, function()
-                            ap(b.UserIcon, 0.04, {ImageTransparency = 1}):Play()
-                            ap(b.Outline, 0.04, {ImageTransparency = 1}):Play()
+                        an.AddSignal(f.InputEnded, function()
+                            ap(f.UserIcon, 0.04, {ImageTransparency = 1}):Play()
+                            ap(f.Outline, 0.04, {ImageTransparency = 1}):Play()
                         end)
                     end
                 end
 
-                local d
-                local f
-                local g = false
+                local g
                 local h
-                local i = typeof(aw.Background) == 'string' and string.match(aw.Background, '^video:(.+)') or nil
-                local j = typeof(aw.Background) == 'string' and not i and string.match(aw.Background, '^https?://.+') or nil
-                local m = typeof(aw.Background) == 'string' and not i and string.match(aw.Background, '^rbxassetid://%d+') or nil
+                local i = false
+                local j
+                local m = typeof(aw.Background) == 'string' and string.match(aw.Background, '^video:(.+)') or nil
+                local p = typeof(aw.Background) == 'string' and not m and string.match(aw.Background, '^https?://.+') or nil
+                local r = typeof(aw.Background) == 'string' and not m and string.match(aw.Background, '^rbxassetid://%d+') or nil
 
-                local function GetImageExtension(p)
-                    if not p or typeof(p) ~= 'string' then
+                local function GetImageExtension(u)
+                    if not u or typeof(u) ~= 'string' then
                         return '.png'
                     end
 
-                    local r = p:match'^([^?#]+)' or p
-                    local u = r:match'%.(%w+)$'
+                    local v = u:match'^([^?#]+)' or u
+                    local x = v:match'%.(%w+)$'
 
-                    if u then
-                        u = u:lower()
+                    if x then
+                        x = x:lower()
 
-                        if u == 'jpg' or u == 'jpeg' or u == 'png' or u == 'webp' then
-                            return '.' .. u
+                        if x == 'jpg' or x == 'jpeg' or x == 'png' or x == 'webp' then
+                            return '.' .. x
                         end
                     end
 
                     return '.png'
                 end
 
-                if typeof(aw.Background) == 'string' and i then
-                    g = true
+                if typeof(aw.Background) == 'string' and m then
+                    i = true
 
-                    if string.find(i, 'http') then
-                        local p = (aw.Folder or 'Temp') .. '/assets/.' .. an.SanitizeFilename(i) .. '.webm'
+                    if string.find(m, 'http') then
+                        local u = (aw.Folder or 'Temp') .. '/assets/.' .. an.SanitizeFilename(m) .. '.webm'
 
-                        if not isfile(p) then
-                            local r, u = pcall(function()
-                                local r = game.HttpGet and game:HttpGet(i) or an.Request{
-                                    Url = i,
+                        if not isfile(u) then
+                            local v, x = pcall(function()
+                                local v = game.HttpGet and game:HttpGet(m) or an.Request{
+                                    Url = m,
                                     Method = 'GET',
                                     Headers = {
                                         ['User-Agent'] = 'Roblox/Exploit',
                                     },
                                 }.Body
 
-                                writefile(p, r)
+                                writefile(u, v)
                             end)
 
-                            if not r then
-                                warn('[ WindUI.Window.Background ] Failed to download video: ' .. tostring(u))
+                            if not v then
+                                warn('[ WindUI.Window.Background ] Failed to download video: ' .. tostring(x))
                             end
                         end
 
-                        local r, u = pcall(function()
-                            return getcustomasset(p)
+                        local v, x = pcall(function()
+                            return getcustomasset(u)
                         end)
 
-                        if not r then
-                            warn('[ WindUI.Window.Background ] Failed to load custom asset: ' .. tostring(u))
+                        if not v then
+                            warn('[ WindUI.Window.Background ] Failed to load custom asset: ' .. tostring(x))
                         end
 
                         warn
 [[[ WindUI.Window.Background ] VideoFrame may not work with custom video]]
 
-                        i = u
+                        m = x
                     end
 
-                    h = ao('VideoFrame', {
+                    j = ao('VideoFrame', {
                         BackgroundTransparency = 1,
                         Size = UDim2.new(1, 0, 1, 0),
-                        Video = i,
+                        Video = m,
                         Looped = true,
                         Volume = 0,
                     }, {
@@ -15521,40 +15530,40 @@ do
                         }),
                     })
 
-                    h:Play()
-                elseif j then
-                    local p = (aw.Folder or 'Temp') .. '/assets/.' .. an.SanitizeFilename(j) .. GetImageExtension(j)
+                    j:Play()
+                elseif p then
+                    local u = (aw.Folder or 'Temp') .. '/assets/.' .. an.SanitizeFilename(p) .. GetImageExtension(p)
 
-                    if isfile and not isfile(p) then
-                        local r, u = pcall(function()
-                            local r = game.HttpGet and game:HttpGet(j) or an.Request{
-                                Url = j,
+                    if isfile and not isfile(u) then
+                        local v, x = pcall(function()
+                            local v = game.HttpGet and game:HttpGet(p) or an.Request{
+                                Url = p,
                                 Method = 'GET',
                                 Headers = {
                                     ['User-Agent'] = 'Roblox/Exploit',
                                 },
                             }.Body
 
-                            writefile(p, r)
+                            writefile(u, v)
                         end)
 
-                        if not r then
-                            warn('[ Window.Background ] Failed to download image: ' .. tostring(u))
+                        if not v then
+                            warn('[ Window.Background ] Failed to download image: ' .. tostring(x))
                         end
                     end
 
-                    local r, u = pcall(function()
-                        return getcustomasset(p)
+                    local v, x = pcall(function()
+                        return getcustomasset(u)
                     end)
 
-                    if not r then
-                        warn('[ Window.Background ] Failed to load custom asset: ' .. tostring(u))
+                    if not v then
+                        warn('[ Window.Background ] Failed to load custom asset: ' .. tostring(x))
                     end
 
-                    h = ao('ImageLabel', {
+                    j = ao('ImageLabel', {
                         BackgroundTransparency = 1,
                         Size = UDim2.new(1, 0, 1, 0),
-                        Image = u,
+                        Image = x,
                         ImageTransparency = 0,
                         ScaleType = 'Crop',
                     }, {
@@ -15562,11 +15571,11 @@ do
                             CornerRadius = UDim.new(0, aw.UICorner),
                         }),
                     })
-                elseif m then
-                    h = ao('ImageLabel', {
+                elseif r then
+                    j = ao('ImageLabel', {
                         BackgroundTransparency = 1,
                         Size = UDim2.new(1, 0, 1, 0),
-                        Image = m,
+                        Image = r,
                         ImageTransparency = 0,
                         ScaleType = 'Crop',
                     }, {
@@ -15575,7 +15584,7 @@ do
                         }),
                     })
                 elseif aw.Background then
-                    h = ao('ImageLabel', {
+                    j = ao('ImageLabel', {
                         BackgroundTransparency = 1,
                         Size = UDim2.new(1, 0, 1, 0),
                         Image = typeof(aw.Background) == 'string' and aw.Background or '',
@@ -15588,7 +15597,7 @@ do
                     })
                 end
 
-                local p = an.NewRoundFrame(99, 'Squircle', {
+                local u = an.NewRoundFrame(99, 'Squircle', {
                     ImageTransparency = 0.8,
                     ImageColor3 = Color3.new(1, 1, 1),
                     Size = UDim2.new(0, 0, 0, 4),
@@ -15606,9 +15615,9 @@ do
                     }),
                 })
 
-                function createAuthor(r)
+                function createAuthor(v)
                     return ao('TextLabel', {
-                        Text = r,
+                        Text = v,
                         FontFace = Font.new(an.Font, Enum.FontWeight.Medium),
                         BackgroundTransparency = 1,
                         TextTransparency = 0.35,
@@ -15624,14 +15633,14 @@ do
                     })
                 end
 
-                local r
-                local u
+                local v
+                local x
 
                 if aw.Author then
-                    r = createAuthor(aw.Author)
+                    v = createAuthor(aw.Author)
                 end
 
-                local v = ao('TextLabel', {
+                local z = ao('TextLabel', {
                     Text = aw.Title,
                     FontFace = Font.new(an.Font, Enum.FontWeight.SemiBold),
                     BackgroundTransparency = 1,
@@ -15654,7 +15663,7 @@ do
                 }, {
                     av.WindUI.UIScaleObj,
                     aw.AcrylicPaint and aw.AcrylicPaint.Frame or nil,
-                    aC,
+                    d,
                     an.NewRoundFrame(aw.UICorner, 'Squircle', {
                         ImageTransparency = 1,
                         Size = UDim2.new(1, 0, 1, 0),
@@ -15664,10 +15673,10 @@ do
                         ThemeTag = {
                             ImageColor3 = 'WindowBackground',
                         },
-                    }, {h, p, az}),
+                    }, {j, u, az}),
                     ay,
                     aA,
-                    aB,
+                    b,
                     ao('Frame', {
                         Size = UDim2.new(1, 0, 1, 0),
                         BackgroundTransparency = 1,
@@ -15680,15 +15689,15 @@ do
                         }),
                         aw.UIElements.SideBarContainer,
                         aw.UIElements.MainBar,
-                        b,
                         f,
+                        h,
                         ao('Frame', {
                             Size = UDim2.new(1, 0, 0, aw.Topbar.Height),
                             BackgroundTransparency = 1,
                             BackgroundColor3 = Color3.fromRGB(50, 50, 50),
                             Name = 'Topbar',
                         }, {
-                            d,
+                            g,
                             ao('Frame', {
                                 AutomaticSize = 'X',
                                 Size = UDim2.new(0, 0, 1, 0),
@@ -15714,8 +15723,8 @@ do
                                         FillDirection = 'Vertical',
                                         VerticalAlignment = 'Center',
                                     }),
+                                    z,
                                     v,
-                                    r,
                                 }),
                                 ao('UIPadding', {
                                     PaddingLeft = UDim.new(0, 4),
@@ -15773,17 +15782,17 @@ do
 
                 an.AddSignal(aw.UIElements.Main.Main.Topbar.Left:GetPropertyChangedSignal'AbsoluteSize', function(
                 )
-                    local x = 0
-                    local z = aw.UIElements.Main.Main.Topbar.Right.UIListLayout.AbsoluteContentSize.X / av.WindUI.UIScale
+                    local A = 0
+                    local B = aw.UIElements.Main.Main.Topbar.Right.UIListLayout.AbsoluteContentSize.X / av.WindUI.UIScale
 
-                    x = aw.UIElements.Main.Main.Topbar.Left.AbsoluteSize.X / av.WindUI.UIScale
+                    A = aw.UIElements.Main.Main.Topbar.Left.AbsoluteSize.X / av.WindUI.UIScale
 
                     if aw.Topbar.ButtonsType ~= 'Default' then
-                        x = x + z + aw.UIPadding - 4
+                        A = A + B + aw.UIPadding - 4
                     end
 
-                    aw.UIElements.Main.Main.Topbar.Center.Position = UDim2.new(0, x + (aw.UIPadding / av.WindUI.UIScale), 0.5, 0)
-                    aw.UIElements.Main.Main.Topbar.Center.Size = UDim2.new(1, -x - (aw.UIPadding / av.WindUI.UIScale) - (aw.Topbar.ButtonsType == 'Default' and z + aw.UIPadding or 0), 1, 0)
+                    aw.UIElements.Main.Main.Topbar.Center.Position = UDim2.new(0, A + (aw.UIPadding / av.WindUI.UIScale), 0.5, 0)
+                    aw.UIElements.Main.Main.Topbar.Center.Size = UDim2.new(1, -A - (aw.UIPadding / av.WindUI.UIScale) - (aw.Topbar.ButtonsType == 'Default' and B + aw.UIPadding or 0), 1, 0)
                 end)
 
                 if aw.Topbar.ButtonsType ~= 'Default' then
@@ -15793,8 +15802,8 @@ do
                     end)
                 end
 
-                function aw.CreateTopbarButton(x, z, A, B, F, H, J, L)
-                    local M = an.Image(A, A, 0, aw.Folder, 'WindowTopbarIcon', aw.Topbar.ButtonsType == 'Default' and true or false, H, 'WindowTopbarButtonIcon')
+                function aw.CreateTopbarButton(A, B, C, F, G, H, J, L)
+                    local M = an.Image(C, C, 0, aw.Folder, 'WindowTopbarIcon', aw.Topbar.ButtonsType == 'Default' and true or false, H, 'WindowTopbarButtonIcon')
 
                     M.Size = aw.Topbar.ButtonsType == 'Default' and UDim2.new(0, L or aw.TopBarButtonIconSize, 0, L or aw.TopBarButtonIconSize) or UDim2.new(0, 0, 0, 0)
                     M.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -15807,7 +15816,7 @@ do
 
                     local N = an.NewRoundFrame(aw.Topbar.ButtonsType == 'Default' and aw.UICorner - (aw.UIPadding / 2) or 999, 'Squircle', {
                         Size = aw.Topbar.ButtonsType == 'Default' and UDim2.new(0, aw.Topbar.Height - 16, 0, aw.Topbar.Height - 16) or UDim2.new(0, 14, 0, 14),
-                        LayoutOrder = F or 999,
+                        LayoutOrder = G or 999,
                         ZIndex = 9999,
                         AnchorPoint = Vector2.new(0.5, 0.5),
                         Position = UDim2.new(0.5, 0, 0.5, 0),
@@ -15824,17 +15833,17 @@ do
                         Size = aw.Topbar.ButtonsType ~= 'Default' and UDim2.new(0, 24, 0, 24) or UDim2.new(0, aw.Topbar.Height - 16, 0, aw.Topbar.Height - 16),
                         BackgroundTransparency = 1,
                         Parent = aw.UIElements.Main.Main.Topbar.Right,
-                        LayoutOrder = F or 999,
+                        LayoutOrder = G or 999,
                     }, {N})
 
-                    aw.TopBarButtons[100 - F] = {
-                        Name = z,
+                    aw.TopBarButtons[100 - G] = {
+                        Name = B,
                         Object = O,
                     }
 
                     an.AddSignal(N.MouseButton1Click, function()
-                        if B then
-                            B()
+                        if F then
+                            F()
                         end
                     end)
                     an.AddSignal(N.MouseEnter, function()
@@ -15866,55 +15875,55 @@ do
 
                     return N
                 end
-                function aw.Topbar.Button(x, z: {Name: string, Icon: string, Callback: any, LayoutOrder: number, IconThemed: boolean, Color: Color3, IconSize: number})
-                    return aw:CreateTopbarButton(z.Name, z.Icon, z.Callback, z.LayoutOrder or 0, z.IconThemed, z.Color, z.IconSize)
+                function aw.Topbar.Button(A, B: {Name: string, Icon: string, Callback: any, LayoutOrder: number, IconThemed: boolean, Color: Color3, IconSize: number})
+                    return aw:CreateTopbarButton(B.Name, B.Icon, B.Callback, B.LayoutOrder or 0, B.IconThemed, B.Color, B.IconSize)
                 end
 
-                local x = an.Drag(aw.UIElements.Main, {
+                local A = an.Drag(aw.UIElements.Main, {
                     aw.UIElements.Main.Main.Topbar,
-                    p.Frame,
-                }, function(x, z)
+                    u.Frame,
+                }, function(A, B)
                     if not aw.Closed then
-                        if x and z == p.Frame then
-                            ap(p, 0.1, {ImageTransparency = 0.35}):Play()
+                        if A and B == u.Frame then
+                            ap(u, 0.1, {ImageTransparency = 0.35}):Play()
                         else
-                            ap(p, 0.2, {ImageTransparency = 0.8}):Play()
+                            ap(u, 0.2, {ImageTransparency = 0.8}):Play()
                         end
 
                         aw.Position = aw.UIElements.Main.Position
-                        aw.Dragging = x
+                        aw.Dragging = A
                     end
                 end)
 
-                if not g and aw.Background and typeof(aw.Background) == 'table' then
-                    local z = ao'UIGradient'
+                if not i and aw.Background and typeof(aw.Background) == 'table' then
+                    local B = ao'UIGradient'
 
-                    for A, B in next, aw.Background do
-                        z[A] = B
+                    for C, F in next, aw.Background do
+                        B[C] = F
                     end
 
                     aw.UIElements.BackgroundGradient = an.NewRoundFrame(aw.UICorner, 'Squircle', {
                         Size = UDim2.new(1, 0, 1, 0),
                         Parent = aw.UIElements.Main.Background,
                         ImageTransparency = aw.Transparent and av.WindUI.TransparencyValue or 0,
-                    }, {z})
+                    }, {B})
                 end
 
                 aw.OpenButtonMain = a.C().New(aw)
 
                 task.spawn(function()
                     if aw.Icon then
-                        local z = ao('Frame', {
+                        local B = ao('Frame', {
                             Size = UDim2.new(0, 22, 0, 22),
                             BackgroundTransparency = 1,
                             Parent = aw.UIElements.Main.Main.Topbar.Left,
                         })
 
-                        u = an.Image(aw.Icon, aw.Title, aw.IconRadius, aw.Folder, 'Window', true, aw.IconThemed, 'WindowTopbarIcon')
-                        u.Parent = z
-                        u.Size = UDim2.new(0, aw.IconSize, 0, aw.IconSize)
-                        u.Position = UDim2.new(0.5, 0, 0.5, 0)
-                        u.AnchorPoint = Vector2.new(0.5, 0.5)
+                        x = an.Image(aw.Icon, aw.Title, aw.IconRadius, aw.Folder, 'Window', true, aw.IconThemed, 'WindowTopbarIcon')
+                        x.Parent = B
+                        x.Size = UDim2.new(0, aw.IconSize, 0, aw.IconSize)
+                        x.Position = UDim2.new(0.5, 0, 0.5, 0)
+                        x.AnchorPoint = Vector2.new(0.5, 0.5)
 
                         aw.OpenButtonMain:SetIcon(aw.Icon)
                     else
@@ -15922,49 +15931,49 @@ do
                     end
                 end)
 
-                function aw.SetToggleKey(z, A)
-                    aw.ToggleKey = A
+                function aw.SetToggleKey(B, C)
+                    aw.ToggleKey = C
                 end
-                function aw.SetTitle(z, A)
-                    aw.Title = A
-                    v.Text = A
+                function aw.SetTitle(B, C)
+                    aw.Title = C
+                    z.Text = C
                 end
-                function aw.SetAuthor(z, A)
-                    aw.Author = A
+                function aw.SetAuthor(B, C)
+                    aw.Author = C
 
-                    if not r then
-                        r = createAuthor(aw.Author)
+                    if not v then
+                        v = createAuthor(aw.Author)
                     end
 
-                    r.Text = A
+                    v.Text = C
                 end
-                function aw.SetSize(z, A)
-                    if typeof(A) == 'UDim2' then
-                        aw.Size = A
+                function aw.SetSize(B, C)
+                    if typeof(C) == 'UDim2' then
+                        aw.Size = C
 
-                        ap(aw.UIElements.Main, 0.08, {Size = A}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+                        ap(aw.UIElements.Main, 0.08, {Size = C}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
                     end
                 end
-                function aw.SetBackgroundImage(z, A)
-                    aw.UIElements.Main.Background.ImageLabel.Image = A
+                function aw.SetBackgroundImage(B, C)
+                    aw.UIElements.Main.Background.ImageLabel.Image = C
                 end
-                function aw.SetBackgroundImageTransparency(z, A)
-                    if h and h:IsA'ImageLabel' then
-                        h.ImageTransparency = math.floor(A * 10 + 0.5) / 10
+                function aw.SetBackgroundImageTransparency(B, C)
+                    if j and j:IsA'ImageLabel' then
+                        j.ImageTransparency = math.floor(C * 10 + 0.5) / 10
                     end
 
-                    aw.BackgroundImageTransparency = math.floor(A * 10 + 0.5) / 10
+                    aw.BackgroundImageTransparency = math.floor(C * 10 + 0.5) / 10
                 end
-                function aw.SetBackgroundTransparency(z, A)
-                    local B = math.floor(tonumber(A) * 10 + 0.5) / 10
+                function aw.SetBackgroundTransparency(B, C)
+                    local F = math.floor(tonumber(C) * 10 + 0.5) / 10
 
-                    av.WindUI.TransparencyValue = B
+                    av.WindUI.TransparencyValue = F
 
-                    aw:ToggleTransparency(B > 0)
+                    aw:ToggleTransparency(F > 0)
                 end
 
-                local z
-                local A
+                local B
+                local C
 
                 an.Icon'minimize'
                 an.Icon'maximize'
@@ -15973,23 +15982,23 @@ do
                     aw:ToggleFullscreen()
                 end, (aw.Topbar.ButtonsType == 'Default' and 998 or 999), true, Color3.fromHex'#60C762', aw.Topbar.ButtonsType == 'Mac' and 9 or nil)
 
-                local function SetSize(B)
+                local function SetSize(F)
                     ap(aw.UIElements.Main, 0.45, {
-                        Size = not aw.IsFullscreen and A or UDim2.new(0, (av.WindUI.ScreenGui.AbsoluteSize.X - 20) / av.WindUI.UIScale, 0, (av.WindUI.ScreenGui.AbsoluteSize.Y - 20 - 52) / av.WindUI.UIScale),
+                        Size = not aw.IsFullscreen and C or UDim2.new(0, (av.WindUI.ScreenGui.AbsoluteSize.X - 20) / av.WindUI.UIScale, 0, (av.WindUI.ScreenGui.AbsoluteSize.Y - 20 - 52) / av.WindUI.UIScale),
                     }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
                     ap(aw.UIElements.Main, 0.45, {
-                        Position = not aw.IsFullscreen and z or UDim2.new(0.5, 0, 0.5, 26),
+                        Position = not aw.IsFullscreen and B or UDim2.new(0.5, 0, 0.5, 26),
                     }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
                 end
 
-                function aw.ToggleFullscreen(B)
-                    local F = aw.IsFullscreen
+                function aw.ToggleFullscreen(F)
+                    local G = aw.IsFullscreen
 
-                    x:Set(F)
+                    A:Set(G)
 
-                    if not F then
-                        z = aw.UIElements.Main.Position
-                        A = aw.UIElements.Main.Size
+                    if not G then
+                        B = aw.UIElements.Main.Position
+                        C = aw.UIElements.Main.Size
                         aw.CanResize = false
                     else
                         if aw.Resizable then
@@ -15997,7 +16006,7 @@ do
                         end
                     end
 
-                    aw.IsFullscreen = not F
+                    aw.IsFullscreen = not G
 
                     SetSize(true)
                 end
@@ -16014,35 +16023,35 @@ do
                     end
                 end, (aw.Topbar.ButtonsType == 'Default' and 997 or 998), nil, Color3.fromHex'#F4C948')
 
-                function aw.OnOpen(B, F)
-                    aw.OnOpenCallback = F
+                function aw.OnOpen(F, G)
+                    aw.OnOpenCallback = G
                 end
-                function aw.OnClose(B, F)
-                    aw.OnCloseCallback = F
+                function aw.OnClose(F, G)
+                    aw.OnCloseCallback = G
                 end
-                function aw.OnDestroy(B, F)
-                    aw.OnDestroyCallback = F
+                function aw.OnDestroy(F, G)
+                    aw.OnDestroyCallback = G
                 end
 
                 if av.WindUI.UseAcrylic then
                     aw.AcrylicPaint.AddParent(aw.UIElements.Main)
                 end
 
-                function aw.SetIconSize(B, F)
+                function aw.SetIconSize(F, G)
                     local H
 
-                    if typeof(F) == 'number' then
-                        H = UDim2.new(0, F, 0, F)
-                        aw.IconSize = F
-                    elseif typeof(F) == 'UDim2' then
-                        H = F
-                        aw.IconSize = F.X.Offset
+                    if typeof(G) == 'number' then
+                        H = UDim2.new(0, G, 0, G)
+                        aw.IconSize = G
+                    elseif typeof(G) == 'UDim2' then
+                        H = G
+                        aw.IconSize = G.X.Offset
                     end
-                    if u then
-                        u.Size = H
+                    if x then
+                        x.Size = H
                     end
                 end
-                function aw.Open(B)
+                function aw.Open(F)
                     if aw.Destroyed then
                         return
                     end
@@ -16073,11 +16082,11 @@ do
                             ImageTransparency = aw.Transparent and av.WindUI.TransparencyValue or 0,
                         }, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out):Play()
 
-                        if h then
-                            if h:IsA'VideoFrame' then
-                                h.Visible = true
+                        if j then
+                            if j:IsA'VideoFrame' then
+                                j.Visible = true
                             else
-                                ap(h, 0.2, {
+                                ap(j, 0.2, {
                                     ImageTransparency = aw.BackgroundImageTransparency,
                                 }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
                             end
@@ -16086,14 +16095,14 @@ do
                             aw.OpenButtonMain:Visible(false)
                         end
 
-                        ap(aC, 0.25, {
+                        ap(d, 0.25, {
                             ImageTransparency = aw.ShadowTransparency,
                         }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
-                        ap(p, 0.45, {
+                        ap(u, 0.45, {
                             Size = UDim2.new(0, aw.DragFrameSize, 0, 4),
                             ImageTransparency = 0.8,
                         }, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out):Play()
-                        x:Set(true)
+                        A:Set(true)
 
                         if aw.Resizable then
                             ap(az.ImageLabel, 0.45, {ImageTransparency = 0.8}, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out):Play()
@@ -16108,12 +16117,12 @@ do
                         av.WindUI:ToggleAcrylic(true)
                     end)
                 end
-                function aw.Close(B)
+                function aw.Close(F)
                     if aw.Destroyed then
                         return
                     end
 
-                    local F = {}
+                    local G = {}
 
                     if aw.OnCloseCallback then
                         task.spawn(function()
@@ -16140,21 +16149,21 @@ do
 
                     ap(aw.UIElements.Main.Background, 0.3, {ImageTransparency = 1}, Enum.EasingStyle.Exponential, Enum.EasingDirection.InOut):Play()
 
-                    if h then
-                        if h:IsA'VideoFrame' then
-                            h.Visible = false
+                    if j then
+                        if j:IsA'VideoFrame' then
+                            j.Visible = false
                         else
-                            ap(h, 0.3, {ImageTransparency = 1}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+                            ap(j, 0.3, {ImageTransparency = 1}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
                         end
                     end
 
-                    ap(aC, 0.25, {ImageTransparency = 1}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
-                    ap(p, 0.3, {
+                    ap(d, 0.25, {ImageTransparency = 1}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+                    ap(u, 0.3, {
                         Size = UDim2.new(0, 0, 0, 4),
                         ImageTransparency = 1,
                     }, Enum.EasingStyle.Exponential, Enum.EasingDirection.InOut):Play()
                     ap(az.ImageLabel, 0.3, {ImageTransparency = 1}, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out):Play()
-                    x:Set(false)
+                    A:Set(false)
 
                     aw.CanResize = false
 
@@ -16172,7 +16181,7 @@ do
                         end
                     end)
 
-                    function F.Destroy(H)
+                    function G.Destroy(H)
                         if aw.Destroyed then
                             return
                         end
@@ -16210,96 +16219,96 @@ do
                         end)
                     end
 
-                    return F
+                    return G
                 end
-                function aw.Destroy(B)
+                function aw.Destroy(F)
                     if aw.Destroyed then
                         return
                     end
 
-                    local F = aw:Close()
+                    local G = aw:Close()
 
-                    if F then
-                        return F:Destroy()
+                    if G then
+                        return G:Destroy()
                     end
                 end
-                function aw.Toggle(B)
+                function aw.Toggle(F)
                     if aw.Closed then
                         aw:Open()
                     else
                         aw:Close()
                     end
                 end
-                function aw.ToggleTransparency(B, F)
-                    aw.Transparent = F
-                    av.WindUI.Transparent = F
-                    aw.UIElements.Main.Background.ImageTransparency = F and av.WindUI.TransparencyValue or 0
+                function aw.ToggleTransparency(F, G)
+                    aw.Transparent = G
+                    av.WindUI.Transparent = G
+                    aw.UIElements.Main.Background.ImageTransparency = G and av.WindUI.TransparencyValue or 0
                 end
-                function aw.LockAll(B)
-                    for F, H in next, aw.AllElements do
+                function aw.LockAll(F)
+                    for G, H in next, aw.AllElements do
                         if H.Lock then
                             H:Lock()
                         end
                     end
                 end
-                function aw.UnlockAll(B)
-                    for F, H in next, aw.AllElements do
+                function aw.UnlockAll(F)
+                    for G, H in next, aw.AllElements do
                         if H.Unlock then
                             H:Unlock()
                         end
                     end
                 end
-                function aw.GetLocked(B)
-                    local F = {}
+                function aw.GetLocked(F)
+                    local G = {}
 
                     for H, J in next, aw.AllElements do
                         if J.Locked then
-                            table.insert(F, J)
+                            table.insert(G, J)
                         end
                     end
 
-                    return F
+                    return G
                 end
-                function aw.GetUnlocked(B)
-                    local F = {}
+                function aw.GetUnlocked(F)
+                    local G = {}
 
                     for H, J in next, aw.AllElements do
                         if J.Locked == false then
-                            table.insert(F, J)
+                            table.insert(G, J)
                         end
                     end
 
-                    return F
+                    return G
                 end
-                function aw.GetUIScale(B, F)
+                function aw.GetUIScale(F, G)
                     return av.WindUI.UIScale
                 end
-                function aw.SetUIScale(B, F)
-                    av.WindUI.UIScale = F
+                function aw.SetUIScale(F, G)
+                    av.WindUI.UIScale = G
 
-                    ap(av.WindUI.UIScaleObj, 0.2, {Scale = F}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+                    ap(av.WindUI.UIScaleObj, 0.2, {Scale = G}, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
 
                     return aw
                 end
-                function aw.SetToTheCenter(B)
+                function aw.SetToTheCenter(F)
                     ap(aw.UIElements.Main, 0.45, {
                         Position = UDim2.new(0.5, 0, 0.5, 0),
                     }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
 
                     return aw
                 end
-                function aw.SetCurrentConfig(B, F)
-                    aw.CurrentConfig = F
+                function aw.SetCurrentConfig(F, G)
+                    aw.CurrentConfig = G
                 end
 
                 do
-                    local B = 40
-                    local F = al.ViewportSize
+                    local F = 40
+                    local G = al.ViewportSize
                     local H = Vector2.new(aw.Size.X.Offset, aw.Size.Y.Offset)
 
                     if not aw.IsFullscreen and aw.AutoScale then
-                        local J = F.X - (B * 2)
-                        local L = F.Y - (B * 2)
+                        local J = G.X - (F * 2)
+                        local L = G.Y - (F * 2)
                         local M = J / H.X
                         local N = L / H.Y
                         local O = math.min(M, N)
@@ -16322,12 +16331,12 @@ do
                     end)
                 end
 
-                an.AddInputSignal('InputBegan', function(B, F)
-                    if F then
+                an.AddInputSignal('InputBegan', function(F, G)
+                    if G then
                         return
                     end
                     if aw.ToggleKey then
-                        if B.KeyCode == aw.ToggleKey then
+                        if F.KeyCode == aw.ToggleKey then
                             aw:Toggle()
                         end
                     end
@@ -16336,17 +16345,17 @@ do
                     aw:Open()
                 end)
 
-                function aw.EditOpenButton(B, F)
-                    return aw.OpenButtonMain:Edit(F)
+                function aw.EditOpenButton(F, G)
+                    return aw.OpenButtonMain:Edit(G)
                 end
 
                 if aw.OpenButton and typeof(aw.OpenButton) == 'table' then
                     aw:EditOpenButton(aw.OpenButton)
                 end
 
-                local B = a.ac()
-                local F = a.ad()
-                local H = B.Init(aw, av.WindUI, av.WindUI.TooltipGui)
+                local F = a.ac()
+                local G = a.ad()
+                local H = F.Init(aw, av.WindUI, av.WindUI.TooltipGui)
 
                 H:OnChange(function(J)
                     aw.CurrentTab = J
@@ -16374,7 +16383,7 @@ do
                     H:SelectTab(L)
                 end
                 function aw.Section(J, L)
-                    return F.New(L, aw.UIElements.SideBar.Frame, aw.Folder, av.WindUI.UIScale, aw)
+                    return G.New(L, aw.UIElements.SideBar.Frame, aw.Folder, av.WindUI.UIScale, aw)
                 end
                 function aw.IsResizable(J, L)
                     aw.Resizable = L
@@ -16673,7 +16682,7 @@ do
                     aw:SetToTheCenter()
                 end
 
-                an.AddSignal(p.Frame.MouseButton1Up, function()
+                an.AddSignal(u.Frame.MouseButton1Up, function()
                     local R = tick()
                     local S = aw.Position
 
@@ -16726,13 +16735,13 @@ do
                                 aw.CanResize = true
                             end
 
-                            ap(aB, 0.1, {ImageTransparency = 1}):Play()
+                            ap(b, 0.1, {ImageTransparency = 1}):Play()
 
-                            aB.Active = false
+                            b.Active = false
                         end)
-                        ap(aB, 0.1, {ImageTransparency = 0.65}):Play()
+                        ap(b, 0.1, {ImageTransparency = 0.65}):Play()
 
-                        aB.Active = true
+                        b.Active = true
                         S = true
                         aw.CanResize = false
                     end)
@@ -16920,19 +16929,19 @@ ai.Performance.ConnectionsAfterInitialization = #at.Signals
 
 function ai.GetPerformanceSnapshot(az)
     local aA = 0
-    local aB = {}
+    local b = {}
 
-    for aC, b in ipairs{
+    for d, f in ipairs{
         ai.ScreenGui,
         ai.NotificationGui,
         ai.DropdownGui,
         ai.TooltipGui,
     }do
-        if b and b.Parent then
-            local d = #b:GetDescendants()
+        if f and f.Parent then
+            local g = #f:GetDescendants()
 
-            aA = aA + 1 + d
-            aB[b.Name] = d
+            aA = aA + 1 + g
+            b[f.Name] = g
         end
     end
 
@@ -16953,7 +16962,7 @@ function ai.GetPerformanceSnapshot(az)
         CreatedInstances = at.CreatedCount,
         ComponentStats = at.ComponentStats,
         LiveGuiInstances = aA,
-        GuiRoots = aB,
+        GuiRoots = b,
         ManagedConnections = #at.Signals,
         IconPacks = at.GetIconLoadStats(),
         Loader = ai.LoaderPerformance,
@@ -16978,37 +16987,37 @@ math.clamp(ai.TransparencyValue, 0, 1)
 
 local az = ai.NotificationModule.Init(ai.NotificationGui)
 
-function ai.Notify(aA, aB)
-    aB.Holder = az.Frame
-    aB.Window = ai.Window
+function ai.Notify(aA, b)
+    b.Holder = az.Frame
+    b.Window = ai.Window
 
-    return ai.NotificationModule.New(aB)
+    return ai.NotificationModule.New(b)
 end
-function ai.SetNotificationLower(aA, aB)
-    az.SetLower(aB)
+function ai.SetNotificationLower(aA, b)
+    az.SetLower(b)
 end
-function ai.SetFont(aA, aB)
-    at.UpdateFont(aB)
+function ai.SetFont(aA, b)
+    at.UpdateFont(b)
 end
-function ai.OnThemeChange(aA, aB)
-    ai.OnThemeChangeFunction = aB
+function ai.OnThemeChange(aA, b)
+    ai.OnThemeChangeFunction = b
 end
-function ai.AddTheme(aA, aB)
-    ai.Themes[aB.Name] = aB
+function ai.AddTheme(aA, b)
+    ai.Themes[b.Name] = b
 
-    return aB
+    return b
 end
-function ai.SetTheme(aA, aB)
-    if ai.Themes[aB] then
-        ai.Theme = ai.Themes[aB]
+function ai.SetTheme(aA, b)
+    if ai.Themes[b] then
+        ai.Theme = ai.Themes[b]
 
-        at.SetTheme(ai.Themes[aB])
+        at.SetTheme(ai.Themes[b])
 
         if ai.OnThemeChangeFunction then
-            ai.OnThemeChangeFunction(aB)
+            ai.OnThemeChangeFunction(b)
         end
 
-        return ai.Themes[aB]
+        return ai.Themes[b]
     end
 
     return nil
@@ -17025,80 +17034,80 @@ end
 function ai.GetWindowSize(aA)
     return ai.Window.UIElements.Main.Size
 end
-function ai.Localization(aA, aB)
-    return ai.LocalizationModule:New(aB, at)
+function ai.Localization(aA, b)
+    return ai.LocalizationModule:New(b, at)
 end
-function ai.SetLanguage(aA, aB)
+function ai.SetLanguage(aA, b)
     if at.Localization then
-        return at.SetLanguage(aB)
+        return at.SetLanguage(b)
     end
 
     return false
 end
-function ai.ToggleAcrylic(aA, aB)
+function ai.ToggleAcrylic(aA, b)
     if ai.Window and ai.Window.AcrylicPaint and ai.Window.AcrylicPaint.Model then
-        ai.Window.Acrylic = aB
-        ai.Window.AcrylicPaint.Model.Transparency = aB and 0.98 or 1
+        ai.Window.Acrylic = b
+        ai.Window.AcrylicPaint.Model.Transparency = b and 0.98 or 1
 
-        if aB then
+        if b then
             av.Enable()
         else
             av.Disable()
         end
     end
 end
-function ai.Gradient(aA, aB, aC)
-    local b = {}
-    local d = {}
+function ai.Gradient(aA, b, d)
+    local f = {}
+    local g = {}
 
-    for f, g in next, aB do
-        local h = tonumber(f)
+    for h, i in next, b do
+        local j = tonumber(h)
 
-        if h then
-            h = math.clamp(h / 100, 0, 1)
+        if j then
+            j = math.clamp(j / 100, 0, 1)
 
-            local i = g.Color
+            local m = i.Color
 
-            if typeof(i) == 'string' and string.sub(i, 1, 1) == '#' then
-                i = Color3.fromHex(i)
+            if typeof(m) == 'string' and string.sub(m, 1, 1) == '#' then
+                m = Color3.fromHex(m)
             end
 
-            local j = g.Transparency or 0
+            local p = i.Transparency or 0
 
-            table.insert(b, ColorSequenceKeypoint.new(h, i))
-            table.insert(d, NumberSequenceKeypoint.new(h, j))
+            table.insert(f, ColorSequenceKeypoint.new(j, m))
+            table.insert(g, NumberSequenceKeypoint.new(j, p))
         end
     end
 
-    table.sort(b, function(f, g)
-        return f.Time < g.Time
+    table.sort(f, function(h, i)
+        return h.Time < i.Time
     end)
-    table.sort(d, function(f, g)
-        return f.Time < g.Time
+    table.sort(g, function(h, i)
+        return h.Time < i.Time
     end)
 
-    if #b < 2 then
-        table.insert(b, ColorSequenceKeypoint.new(1, b[1].Value))
-        table.insert(d, NumberSequenceKeypoint.new(1, d[1].Value))
+    if #f < 2 then
+        table.insert(f, ColorSequenceKeypoint.new(1, f[1].Value))
+        table.insert(g, NumberSequenceKeypoint.new(1, g[1].Value))
     end
 
-    local f = {
-        Color = ColorSequence.new(b),
-        Transparency = NumberSequence.new(d),
+    local h = {
+        Color = ColorSequence.new(f),
+        Transparency = NumberSequence.new(g),
     }
 
-    if aC then
-        for g, h in pairs(aC)do
-            f[g] = h
+    if d then
+        for i, j in pairs(d)do
+            h[i] = j
         end
     end
 
-    return f
+    return h
 end
-function ai.Popup(aA, aB)
-    aB.WindUI = ai
+function ai.Popup(aA, b)
+    b.WindUI = ai
 
-    return a.w().new(aB, ai.ScreenGui.Popups)
+    return a.w().new(b, ai.ScreenGui.Popups)
 end
 
 ai.Themes = a.x()(ai, at)
@@ -17107,24 +17116,24 @@ at.Themes = ai.Themes
 ai:SetTheme'Dark'
 ai:SetLanguage(at.Language)
 
-function ai.CreateWindow(aA, aB)
-    local aC = os.clock()
-    local b = a.ag()
+function ai.CreateWindow(aA, b)
+    local d = os.clock()
+    local f = a.ag()
 
     if not ao:IsStudio() and writefile then
         if not isfolder'WindUI' then
             makefolder'WindUI'
         end
-        if aB.Folder then
-            makefolder(aB.Folder)
+        if b.Folder then
+            makefolder(b.Folder)
         else
-            makefolder(aB.Title)
+            makefolder(b.Title)
         end
     end
 
-    aB.WindUI = ai
-    aB.Window = ai.Window
-    aB.Parent = ai.ScreenGui.Window
+    b.WindUI = ai
+    b.Window = ai.Window
+    b.Parent = ai.ScreenGui.Window
 
     if ai.Window then
         warn'You cannot create more than one window'
@@ -17132,47 +17141,47 @@ function ai.CreateWindow(aA, aB)
         return
     end
 
-    local d = true
-    local f = ai.Themes[aB.Theme or 'Dark']
+    local g = true
+    local h = ai.Themes[b.Theme or 'Dark']
 
-    at.SetTheme(f)
+    at.SetTheme(h)
 
-    local g = gethwid or function()
+    local i = gethwid or function()
         return am.LocalPlayer.UserId
     end
-    local h = g()
+    local j = i()
 
-    if aB.KeySystem then
-        d = false
+    if b.KeySystem then
+        g = false
 
         local function loadKeysystem()
-            as.new(aB, h, function(i)
-                d = i
+            as.new(b, j, function(m)
+                g = m
             end)
         end
 
-        local i = (aB.Folder or 'Temp') .. '/' .. h .. '.key'
+        local m = (b.Folder or 'Temp') .. '/' .. j .. '.key'
 
-        if aB.KeySystem.KeyValidator then
-            if aB.KeySystem.SaveKey and isfile(i) then
-                local j = readfile(i)
-                local m = aB.KeySystem.KeyValidator(j)
+        if b.KeySystem.KeyValidator then
+            if b.KeySystem.SaveKey and isfile(m) then
+                local p = readfile(m)
+                local r = b.KeySystem.KeyValidator(p)
 
-                if m then
-                    d = true
+                if r then
+                    g = true
                 else
                     loadKeysystem()
                 end
             else
                 loadKeysystem()
             end
-        elseif not aB.KeySystem.API then
-            if aB.KeySystem.SaveKey and isfile(i) then
-                local j = readfile(i)
-                local m = (type(aB.KeySystem.Key) == 'table') and table.find(aB.KeySystem.Key, j) or tostring(aB.KeySystem.Key) == tostring(j)
+        elseif not b.KeySystem.API then
+            if b.KeySystem.SaveKey and isfile(m) then
+                local p = readfile(m)
+                local r = (type(b.KeySystem.Key) == 'table') and table.find(b.KeySystem.Key, p) or tostring(b.KeySystem.Key) == tostring(p)
 
-                if m then
-                    d = true
+                if r then
+                    g = true
                 else
                     loadKeysystem()
                 end
@@ -17180,71 +17189,32 @@ function ai.CreateWindow(aA, aB)
                 loadKeysystem()
             end
         else
-            local j = (getgenv and getgenv()) or _G
-            local m = aB.KeySystem.KeyEnvName or 'WindUIKey'
-            local p = j[m]
-            local r = type(p) == 'string' and p ~= ''
-            local u = false
+            local p = (getgenv and getgenv()) or _G
+            local r = b.KeySystem.KeyEnvName or 'WindUIKey'
+            local u = p[r]
+            local v = type(u) == 'string' and u ~= ''
+            local x = false
 
-            if r then
-                local v = {}
-
-                for x, z in next, aB.KeySystem.API do
-                    local A = ai.Services[z.Type]
-
-                    if A then
-                        local B = {}
-
-                        for F, H in next, A.Args do
-                            table.insert(B, z[H])
-                        end
-
-                        local F = A.New(table.unpack(B))
-
-                        table.insert(v, F)
-
-                        local H, J = pcall(F.Verify, p)
-
-                        if H and J == true then
-                            u = true
-
-                            break
-                        end
-                    end
-                end
-
-                if u then
-                    d = true
-
-                    as.PublishAuth(aB, p, v)
-                else
-                    j[m] = nil
-
-                    loadKeysystem()
-                end
-            end
-            if not r and isfile(i) then
-                local v = readfile(i)
-                local x = false
+            if v then
                 local z = {}
 
-                for A, B in next, aB.KeySystem.API do
-                    local F = ai.Services[B.Type]
+                for A, B in next, b.KeySystem.API do
+                    local C = ai.Services[B.Type]
 
-                    if F then
-                        local H = {}
+                    if C then
+                        local F = {}
 
-                        for J, L in next, F.Args do
-                            table.insert(H, B[L])
+                        for G, H in next, C.Args do
+                            table.insert(F, B[H])
                         end
 
-                        local J = F.New(table.unpack(H))
+                        local G = C.New(table.unpack(F))
 
-                        table.insert(z, J)
+                        table.insert(z, G)
 
-                        local L = J.Verify(v)
+                        local H, J = pcall(G.Verify, u)
 
-                        if L then
+                        if H and J == true then
                             x = true
 
                             break
@@ -17252,39 +17222,78 @@ function ai.CreateWindow(aA, aB)
                     end
                 end
 
-                d = x
-
                 if x then
-                    as.PublishAuth(aB, v, z)
+                    g = true
+
+                    as.PublishAuth(b, u, z)
+                else
+                    p[r] = nil
+
+                    loadKeysystem()
+                end
+            end
+            if not v and isfile(m) then
+                local z = readfile(m)
+                local A = false
+                local B = {}
+
+                for C, F in next, b.KeySystem.API do
+                    local G = ai.Services[F.Type]
+
+                    if G then
+                        local H = {}
+
+                        for J, L in next, G.Args do
+                            table.insert(H, F[L])
+                        end
+
+                        local J = G.New(table.unpack(H))
+
+                        table.insert(B, J)
+
+                        local L = J.Verify(z)
+
+                        if L then
+                            A = true
+
+                            break
+                        end
+                    end
+                end
+
+                g = A
+
+                if A then
+                    as.PublishAuth(b, z, B)
                 else
                     loadKeysystem()
                 end
-            elseif not r then
+            elseif not v then
                 loadKeysystem()
             end
         end
 
         repeat
             task.wait()
-        until d
+        until g
     end
 
-    local i = b(aB)
+    local m = f(b)
 
-    ai.Transparent = aB.Transparent
-    ai.Window = i
+    ai.Transparent = b.Transparent
+    ai.Window = m
 
-    if aB.Acrylic then
+    if b.Acrylic then
         av.init()
     end
 
     ai.Performance.WindowCreatedAt = os.clock()
-    ai.Performance.WindowCreateDuration = ai.Performance.WindowCreatedAt - aC
+    ai.Performance.WindowCreateDuration = ai.Performance.WindowCreatedAt - d
     ai.Performance.MemoryAfterWindowKb = memoryKb()
     ai.Performance.InstancesAfterWindow = at.CreatedCount
     ai.Performance.ConnectionsAfterWindow = #at.Signals
 
-    return i
+    return m
 end
 
 return ai
